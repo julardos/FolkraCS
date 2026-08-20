@@ -15,7 +15,7 @@ class UserController extends Controller
 {
     private function client(): Client
     {
-        return Client::where('tenant_id', tenant('id'))->firstOrFail();
+        return Client::where('tenant_id', tenant('id'))->firstOrCreate(['tenant_id' => tenant('id')], ['name' => tenant('id'), 'slug' => tenant('id'), 'status' => 'active', 'openrouter_model' => 'openai/gpt-4o-mini']);
     }
 
     public function index()

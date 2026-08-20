@@ -12,7 +12,10 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $client = Client::where('tenant_id', tenant('id'))->firstOrFail();
+        $client = Client::where('tenant_id', tenant('id'))->firstOrCreate(
+            ['tenant_id' => tenant('id')],
+            ['name' => tenant('id'), 'slug' => tenant('id'), 'status' => 'active', 'openrouter_model' => 'openai/gpt-4o-mini']
+        );
 
         return Inertia::render('Tenant/Dashboard', [
             'client'              => ['name' => $client->name, 'status' => $client->status],

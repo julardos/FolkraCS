@@ -22,7 +22,7 @@ const props = defineProps({ clients: Array, landlordDomain: String });
 const showNewForm = ref(false);
 const form = useForm({
   name: '', business_type: '', slug: '',
-  admin_name: '', admin_email: '',
+  admin_name: '', admin_email: '', admin_password: '',
   wa_base_url: '', wa_api_key: '', wa_session: '',
   openrouter_api_key: '', openrouter_model: 'openai/gpt-4o-mini',
   ai_instruction: '',
@@ -174,6 +174,12 @@ const expandedInstruction = ref(null);
             <Label>Admin Email *</Label>
             <Input v-model="form.admin_email" placeholder="admin@example.com" />
             <p v-if="form.errors.admin_email || localErrors.admin_email" class="text-xs text-destructive">{{ form.errors.admin_email || localErrors.admin_email }}</p>
+          </div>
+          <div class="space-y-1.5">
+            <Label>Temp Password <span class="text-muted-foreground font-normal">(optional — generated if blank)</span></Label>
+            <Input v-model="form.admin_password" type="password" placeholder="Min 8 chars" />
+            <p class="text-xs text-muted-foreground">Share this with the client so they can log in immediately.</p>
+            <p v-if="form.errors.admin_password" class="text-xs text-destructive">{{ form.errors.admin_password }}</p>
           </div>
         </div>
 

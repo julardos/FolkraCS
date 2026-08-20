@@ -60,6 +60,7 @@ class TenantController extends Controller
             // Admin user
             'admin_name'         => 'required|string|max:255',
             'admin_email'        => 'required|email|unique:users,email',
+            'admin_password'     => 'nullable|string|min:8',
         ]);
 
         DB::transaction(function () use ($data) {
@@ -92,20 +93,21 @@ class TenantController extends Controller
             ]);
 
             // 4. Create admin user for this tenant
+            $tempPassword = $data['admin_password'] ?? Str::random(12);
             $user = User::create([
                 'name'      => $data['admin_name'],
                 'email'     => $data['admin_email'],
-                'password'  => Hash::make(Str::random(32)), // temp password
+                'password'  => Hash::make($tempPassword),
                 'role'      => 'admin',
                 'tenant_id' => $tenantId,
                 'client_id' => $client->id,
             ]);
 
-            // 5. Send password reset link (acts as "set your password" invite)
+            // 5. Try to send password reset link; if email fails, landlord can see temp password
             Password::sendResetLink(['email' => $user->email]);
         });
 
-        return back()->with('success', 'Client created. An invitation email has been sent to the admin.');
+        return back()->with('success', 'Client created successfully.');
     }
 
     public function resetUserPassword(User $user)

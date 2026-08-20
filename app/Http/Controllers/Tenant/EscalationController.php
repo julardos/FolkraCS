@@ -12,7 +12,7 @@ class EscalationController extends Controller
 {
     public function index()
     {
-        $client   = Client::where('tenant_id', tenant('id'))->firstOrFail();
+        $client   = Client::where('tenant_id', tenant('id'))->firstOrCreate(['tenant_id' => tenant('id')], ['name' => tenant('id'), 'slug' => tenant('id'), 'status' => 'active', 'openrouter_model' => 'openai/gpt-4o-mini']);
         $settings = NotificationSetting::where('client_id', $client->id)->first();
 
         return Inertia::render('Tenant/Escalation', [
@@ -34,7 +34,7 @@ class EscalationController extends Controller
 
     public function update(Request $request)
     {
-        $client = Client::where('tenant_id', tenant('id'))->firstOrFail();
+        $client = Client::where('tenant_id', tenant('id'))->firstOrCreate(['tenant_id' => tenant('id')], ['name' => tenant('id'), 'slug' => tenant('id'), 'status' => 'active', 'openrouter_model' => 'openai/gpt-4o-mini']);
 
         $data = $request->validate([
             'channel_wa'    => 'boolean',

@@ -11,7 +11,7 @@ class ConversationController extends Controller
 {
     public function index()
     {
-        $client = Client::where('tenant_id', tenant('id'))->firstOrFail();
+        $client = Client::where('tenant_id', tenant('id'))->firstOrCreate(['tenant_id' => tenant('id')], ['name' => tenant('id'), 'slug' => tenant('id'), 'status' => 'active', 'openrouter_model' => 'openai/gpt-4o-mini']);
 
         $conversations = Conversation::where('client_id', $client->id)
             ->with('customer:id,name,phone,push_name,is_human_takeover')
@@ -26,7 +26,7 @@ class ConversationController extends Controller
 
     public function show(Conversation $conversation)
     {
-        $client = Client::where('tenant_id', tenant('id'))->firstOrFail();
+        $client = Client::where('tenant_id', tenant('id'))->firstOrCreate(['tenant_id' => tenant('id')], ['name' => tenant('id'), 'slug' => tenant('id'), 'status' => 'active', 'openrouter_model' => 'openai/gpt-4o-mini']);
         abort_if($conversation->client_id !== $client->id, 403);
 
         return Inertia::render('Tenant/ConversationDetail', [

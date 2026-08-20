@@ -25,7 +25,7 @@ class LiveAgentController extends Controller
 
     private function authorizeCustomer(Customer $customer): void
     {
-        $client = Client::where('tenant_id', tenant('id'))->firstOrFail();
+        $client = Client::where('tenant_id', tenant('id'))->firstOrCreate(['tenant_id' => tenant('id')], ['name' => tenant('id'), 'slug' => tenant('id'), 'status' => 'active', 'openrouter_model' => 'openai/gpt-4o-mini']);
         abort_if($customer->client_id !== $client->id, 403);
     }
 }
