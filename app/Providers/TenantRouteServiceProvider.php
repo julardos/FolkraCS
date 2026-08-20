@@ -13,7 +13,9 @@ class TenantRouteServiceProvider extends ServiceProvider
             return;
         }
 
-        Route::middleware('web')
-            ->group(base_path('routes/tenant.php'));
+        // No outer middleware — tenant.php applies 'web' internally.
+        // Applying 'web' here too causes VerifyCsrfToken to run twice,
+        // which silently kills POST requests with 419 (Inertia reloads login, no error shown).
+        Route::group([], base_path('routes/tenant.php'));
     }
 }

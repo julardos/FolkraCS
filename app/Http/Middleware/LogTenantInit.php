@@ -10,23 +10,37 @@ class LogTenantInit
 {
     public function handle(Request $request, Closure $next)
     {
-        Log::channel('single')->info('[MIDDLEWARE] LogTenantInit', [
-            'host'           => $request->getHost(),
-            'path'           => $request->path(),
-            'method'         => $request->method(),
-            'tenant_active'  => function_exists('tenant') && tenant() ? tenant('id') : 'none',
-            'session_id'     => session()->getId(),
-            'authenticated'  => auth()->check() ? auth()->id() : 'no',
+        $tenantId = 'none';
+        try {
+            if (function_exists('tenant') && tenancy()->initialized) {
+                $tenantId = tenant('id') ?? 'initialized-but-null';
+            }
+        } catch (\Throwable) {}
+
+        Log::channel('single')->info('[TENANT MIDDLEWARE] before', [
+            'host'    => $request->getHost(),
+            'method'  => $request->method(),
+            'path'    => $request->path(),
+            'tenant'  => $tenantId,
+            'session' => session()->getId(),
+            'auth'    => auth()->check() ? auth()->user()->email : 'guest',
         ]);
 
         $response = $next($request);
 
-        Log::channel('single')->info('[MIDDLEWARE] LogTenantInit AFTER', [
-            'host'           => $request->getHost(),
-            'path'           => $request->path(),
-            'status'         => $response->getStatusCode(),
-            'tenant_active'  => function_exists('tenant') && tenant() ? tenant('id') : 'none',
-            'authenticated'  => auth()->check() ? auth()->id() : 'no',
+        $tenantIdAfter = 'none';
+        try {
+            if (function_exists('tenant') && tenancy()->initialized) {
+                $tenantIdAfter = tenant('id') ?? 'initialized-but-null';
+            }
+        } catch (\Throwable) {}
+
+        Log::channel('single')->info('[TENANT MIDDLEWARE] after', [
+            'host'   => $request->getHost(),
+            'path'   => $request->path(),
+            'status' => $response->getStatusCode(),
+            'tenant' => $tenantIdAfter,
+            'auth'   => auth()->check() ? auth()->user()->email : 'guest',
         ]);
 
         return $response;
