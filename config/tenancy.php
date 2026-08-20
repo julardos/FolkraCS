@@ -16,14 +16,15 @@ return [
      *
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
-    'central_domains' => [
+    'central_domains' => array_filter(array_unique([
         '127.0.0.1',
         'localhost',
         'landlord.localhost',
         'folkra-cs.test',
         'landlord.folkra-cs.test',
-        env('LANDLORD_DOMAIN', 'folkra-cs.test'),
-    ],
+        'folkra.co',                             // production landlord domain
+        env('LANDLORD_DOMAIN', 'folkra.co'),     // overridable via .env
+    ])),
 
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.

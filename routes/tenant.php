@@ -15,8 +15,8 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 Route::middleware([
     'web',
-    InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
+    InitializeTenancyByDomain::class,
 ])->group(function () {
 
     Route::get('/', fn() => redirect('/dashboard'));
