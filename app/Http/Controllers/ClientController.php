@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -22,6 +23,7 @@ class ClientController extends Controller
                 'openrouter_model'=> $c->openrouter_model,
                 'masked_wa_key'   => $c->masked_wa_key,
                 'masked_ai_key'   => $c->masked_ai_key,
+                'users'           => User::where('tenant_id', $c->tenant_id)->get(['id','name','email']),
                 'created_at'      => $c->created_at->format('d M Y'),
             ]),
         ]);

@@ -17,7 +17,7 @@ class AuthenticatedSessionController extends Controller
     public function create(): Response
     {
         return Inertia::render('Auth/Login', [
-            'canResetPassword' => Route::has('password.request'),
+            'canResetPassword' => true, // reset routes exist on both landlord and tenant domains
             'status'           => session('status'),
         ]);
     }

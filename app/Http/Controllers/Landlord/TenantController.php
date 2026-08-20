@@ -108,6 +108,20 @@ class TenantController extends Controller
         return back()->with('success', 'Client created. An invitation email has been sent to the admin.');
     }
 
+    public function resetUserPassword(User $user)
+    {
+        // Only allow resetting tenant users, not other landlords
+        abort_if(!$user->tenant_id, 403);
+
+        $status = Password::sendResetLink(['email' => $user->email]);
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return back()->with('success', "Password reset link sent to {$user->email}.");
+        }
+
+        return back()->withErrors(['email' => __($status)]);
+    }
+
     public function destroy(Client $client)
     {
         DB::transaction(function () use ($client) {

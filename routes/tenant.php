@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Tenant\AiSettingsController;
 use App\Http\Controllers\Tenant\ConversationController;
 use App\Http\Controllers\Tenant\DashboardController;
@@ -23,15 +26,21 @@ Route::middleware([
 
     Route::get('/', fn() => redirect('/dashboard'));
 
-    // Auth
-    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
-    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+    // Auth — all using plain paths (no Ziggy route() dependency on tenant domain)
+    Route::middleware('guest')->group(function () {
+        Route::get('/login',          [AuthenticatedSessionController::class, 'create'])->name('login');
+        Route::post('/login',         [AuthenticatedSessionController::class, 'store']);
+        Route::get('/forgot-password',[PasswordResetLinkController::class, 'create'])->name('password.request');
+        Route::post('/forgot-password',[PasswordResetLinkController::class, 'store'])->name('password.email');
+        Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+        Route::post('/reset-password',        [NewPasswordController::class, 'store'])->name('password.update');
+    });
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     // Authenticated tenant routes
     Route::middleware(['auth'])->group(function () {
 
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('tenant.dashboard');
+        Route::get('/dashboard', DashboardController::class)->name('tenant.dashboard');
 
         // Conversations (all admins can view)
         Route::get('/conversations', [ConversationController::class, 'index'])->name('tenant.conversations');

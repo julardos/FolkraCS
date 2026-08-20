@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ref, computed } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
-import { Plus, Pencil, Trash2, Wifi, WifiOff, Bot, Key, ChevronDown, ChevronUp, ExternalLink } from 'lucide-vue-next';
+import { Plus, Pencil, Trash2, Wifi, Bot, Key, ChevronDown, ChevronUp, ExternalLink, Mail } from 'lucide-vue-next';
 import Card from '@/components/ui/card/Card.vue';
 import CardHeader from '@/components/ui/card/CardHeader.vue';
 import CardTitle from '@/components/ui/card/CardTitle.vue';
@@ -322,7 +322,20 @@ const expandedInstruction = ref(null);
                 </a>
                 <p v-else class="text-xs text-amber-600">No domain — add a slug when editing</p>
                 <p class="font-mono text-xs text-muted-foreground mt-1">POST /api/webhook</p>
-                <p class="text-xs text-muted-foreground">{{ client.user_count }} user(s)</p>
+                <!-- Users with password reset -->
+                <div v-if="client.users?.length" class="mt-2 space-y-1">
+                  <div v-for="u in client.users" :key="u.id" class="flex items-center justify-between gap-2">
+                    <span class="text-xs text-muted-foreground truncate">{{ u.email }}</span>
+                    <button
+                      @click="$inertia.post(`/tenants/users/${u.id}/reset-password`)"
+                      class="shrink-0 text-xs text-primary hover:underline flex items-center gap-1"
+                      title="Send password reset email"
+                    >
+                      <Mail class="w-3 h-3" /> Reset
+                    </button>
+                  </div>
+                </div>
+                <p v-else class="text-xs text-amber-600 mt-1">No users yet</p>
               </div>
             </div>
 
