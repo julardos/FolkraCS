@@ -35,7 +35,7 @@ class WahaClient
                 'url'      => $url,
                 'chatId'   => $chatId,
                 'session'  => $session,
-                'has_key'  => ! empty($this->apiKey),
+                'has_key'  => $this->apiKey,
             ]);
 
             $response = Http::withHeaders(['X-Api-Key' => $this->apiKey])
