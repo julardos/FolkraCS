@@ -21,8 +21,7 @@ const props = defineProps({ clients: Array, landlordDomain: String });
 // ── New client form ──────────────────────────────────────────
 const showNewForm = ref(false);
 const form = useForm({
-  name: '', business_type: '',
-  // initial admin user to create for this client
+  name: '', business_type: '', slug: '',
   admin_name: '', admin_email: '',
   wa_base_url: '', wa_api_key: '', wa_session: '',
   openrouter_api_key: '', openrouter_model: 'openai/gpt-4o-mini',
@@ -36,6 +35,11 @@ function validateForm() {
   localErrors.value = {};
   if (!form.name || !form.name.trim()) {
     localErrors.value.name = 'Client name is required.';
+  }
+  if (!form.slug || !form.slug.trim()) {
+    localErrors.value.slug = 'Slug is required (used as subdomain).';
+  } else if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(form.slug)) {
+    localErrors.value.slug = 'Slug must be lowercase letters, numbers, and hyphens only.';
   }
   if (!form.admin_name || !form.admin_name.trim()) {
     localErrors.value.admin_name = 'Admin name is required.';
@@ -154,8 +158,8 @@ const expandedInstruction = ref(null);
           <div class="space-y-1.5">
             <Label>Slug (subdomain) *</Label>
             <Input v-model="form.slug" placeholder="sejukin-indonesia" />
-            <p class="text-xs text-muted-foreground">→ {{ form.slug || 'your-slug' }}.localhost</p>
-            <p v-if="form.errors.slug" class="text-xs text-destructive">{{ form.errors.slug }}</p>
+            <p class="text-xs text-muted-foreground">→ {{ form.slug || 'your-slug' }}.{{ $page.props.tenantSuffix ?? 'folkra.co' }}</p>
+            <p v-if="form.errors.slug || localErrors.slug" class="text-xs text-destructive">{{ form.errors.slug || localErrors.slug }}</p>
           </div>
         </div>
 

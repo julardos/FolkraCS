@@ -11,6 +11,7 @@ class ClientController extends Controller
     public function index()
     {
         return Inertia::render('Landlord/Clients/Index', [
+            'tenantSuffix' => env('TENANT_DOMAIN_SUFFIX', 'folkra.co'),
             'clients' => Client::latest()->get()->map(fn($c) => [
                 'id'              => $c->id,
                 'name'            => $c->name,
