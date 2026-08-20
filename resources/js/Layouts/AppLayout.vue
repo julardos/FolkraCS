@@ -1,15 +1,15 @@
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { LayoutDashboard, Users, MessageSquare, Settings, Bot, LogOut } from 'lucide-vue-next';
+import { LayoutDashboard, Users, MessageSquare, Bot, LogOut } from 'lucide-vue-next';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 
 const nav = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'Clients', href: '/clients', icon: Users },
-  { label: 'Conversations', href: '/conversations', icon: MessageSquare },
+  { label: 'Dashboard',      href: '/dashboard',     icon: LayoutDashboard },
+  { label: 'Clients',        href: '/clients',        icon: Users },
+  { label: 'Conversations',  href: '/conversations',  icon: MessageSquare },
 ];
 </script>
 
@@ -31,7 +31,7 @@ const nav = [
           :key="item.href"
           :href="item.href"
           class="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors"
-          :class="$page.url.startsWith(item.href)
+          :class="(item.href === '/dashboard' ? $page.url === item.href : $page.url.startsWith(item.href))
             ? 'bg-primary text-primary-foreground'
             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
         >

@@ -41,7 +41,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         // Landlord user → stay on central domain
-        return redirect()->intended('/clients');
+        return redirect()->intended('/dashboard');
     }
 
     public function destroy(Request $request): RedirectResponse

@@ -1,0 +1,124 @@
+<script setup>
+import AppLayout from '@/Layouts/AppLayout.vue';
+import { Link, router } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
+import Card from '@/components/ui/card/Card.vue';
+import CardContent from '@/components/ui/card/CardContent.vue';
+import Badge from '@/components/ui/badge/Badge.vue';
+import Button from '@/components/ui/button/Button.vue';
+import { MessageSquare, User, Bot, UserCheck, Filter } from 'lucide-vue-next';
+
+const props = defineProps({
+  conversations: Object,
+  clients: Array,
+  filters: Object,
+});
+
+const selectedClient = ref(props.filters.client_id ?? '');
+
+watch(selectedClient, (val) => {
+  router.get('/conversations', val ? { client_id: val } : {}, { preserveState: true, replace: true });
+});
+
+const statusVariant = (s) => ({ active: 'success', escalated: 'destructive', closed: 'secondary' }[s] ?? 'outline');
+
+function takeover(customerId) {
+  router.post(`/customers/${customerId}/takeover`);
+}
+function release(customerId) {
+  router.delete(`/customers/${customerId}/takeover`);
+}
+</script>
+
+<template>
+  <AppLayout>
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">Conversations</h1>
+        <p class="text-muted-foreground text-sm mt-1">
+          {{ conversations.total }} total across all clients
+        </p>
+      </div>
+
+      <!-- Client filter -->
+      <div class="flex items-center gap-2">
+        <Filter class="w-4 h-4 text-muted-foreground" />
+        <select
+          v-model="selectedClient"
+          class="h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <option value="">All clients</option>
+          <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div v-if="!conversations.data.length" class="text-center py-20">
+      <MessageSquare class="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+      <p class="text-muted-foreground">No conversations yet.</p>
+    </div>
+
+    <div class="space-y-2">
+      <Card
+        v-for="conv in conversations.data"
+        :key="conv.id"
+        class="hover:shadow-sm transition-shadow"
+      >
+        <CardContent class="p-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <div class="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                <User class="w-4 h-4 text-muted-foreground" />
+              </div>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <p class="font-medium text-sm">
+                    {{ conv.customer?.name ?? conv.customer?.push_name ?? conv.customer?.phone }}
+                  </p>
+                  <Badge :variant="statusVariant(conv.status)" class="text-xs">{{ conv.status }}</Badge>
+                  <Badge v-if="conv.customer?.is_human_takeover" variant="outline" class="text-xs text-amber-600 border-amber-300">
+                    <UserCheck class="w-3 h-3 mr-1" /> Agent
+                  </Badge>
+                </div>
+                <p class="text-xs text-muted-foreground">
+                  {{ conv.customer?.phone }} · {{ conv.messages_count }} messages · session: {{ conv.wa_session }}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+              <Button
+                v-if="!conv.customer?.is_human_takeover"
+                variant="outline"
+                size="sm"
+                @click="takeover(conv.customer?.id)"
+              >
+                <UserCheck class="w-3 h-3 mr-1" /> Take Over
+              </Button>
+              <Button
+                v-else
+                variant="ghost"
+                size="sm"
+                @click="release(conv.customer?.id)"
+              >
+                <Bot class="w-3 h-3 mr-1" /> Return to Bot
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex justify-center gap-2 mt-6" v-if="conversations.last_page > 1">
+      <Link v-for="link in conversations.links" :key="link.label" :href="link.url ?? '#'">
+        <Button
+          :variant="link.active ? 'default' : 'outline'"
+          size="sm"
+          :disabled="!link.url"
+          v-html="link.label"
+        />
+      </Link>
+    </div>
+  </AppLayout>
+</template>

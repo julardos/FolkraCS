@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\Landlord\ConversationController as LandlordConversationController;
+use App\Http\Controllers\Landlord\DashboardController as LandlordDashboardController;
+use App\Http\Controllers\Landlord\LiveAgentController as LandlordLiveAgentController;
 use App\Http\Controllers\Landlord\TenantController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Middleware\EnsureLandlordDomain;
@@ -14,15 +17,22 @@ use Inertia\Inertia;
 |--------------------------------------------------------------------------
 */
 
-// Root: landlord users go to /clients, unauthenticated go to /login
-// (tenant root is handled separately in routes/tenant.php)
-Route::get('/', fn() => auth()->check() ? redirect('/clients') : redirect('/login'));
+// Root → dashboard if logged in, otherwise login
+Route::get('/', fn() => auth()->check() ? redirect('/dashboard') : redirect('/login'));
 
 // Auth routes (login/logout — shared, works on any domain)
 require __DIR__.'/auth.php';
 
 // Landlord-only routes
 Route::middleware(['auth', EnsureLandlordDomain::class])->group(function () {
+
+    // Dashboard
+    Route::get('/dashboard', [LandlordDashboardController::class, 'index'])->name('landlord.dashboard');
+
+    // Conversations (all clients)
+    Route::get('/conversations', [LandlordConversationController::class, 'index'])->name('landlord.conversations');
+    Route::post('/customers/{customer}/takeover', [LandlordLiveAgentController::class, 'enable'])->name('landlord.takeover.enable');
+    Route::delete('/customers/{customer}/takeover', [LandlordLiveAgentController::class, 'disable'])->name('landlord.takeover.disable');
 
     // Client management
     Route::get('/clients', [ClientController::class, 'index'])->name('landlord.clients');
