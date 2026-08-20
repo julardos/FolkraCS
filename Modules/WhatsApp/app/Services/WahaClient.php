@@ -30,19 +30,41 @@ class WahaClient
     public function sendText(string $chatId, string $text, string $session): bool
     {
         try {
+            $url = "{$this->baseUrl}/api/sendText";
+            Log::info('WahaClient::sendText sending HTTP POST', [
+                'url'      => $url,
+                'chatId'   => $chatId,
+                'session'  => $session,
+                'has_key'  => ! empty($this->apiKey),
+            ]);
+
             $response = Http::withHeaders(['X-Api-Key' => $this->apiKey])
                 ->withoutVerifying()
                 ->timeout(15)
-                ->post("{$this->baseUrl}/api/sendText", [
+                ->post($url, [
                     'chatId'      => $chatId,
                     'text'        => $text,
                     'session'     => $session,
                     'linkPreview' => true,
                 ]);
 
-            return $response->successful();
+            if ($response->successful()) {
+                Log::info('WahaClient::sendText success', [
+                    'status'   => $response->status(),
+                    'response' => $response->json(),
+                ]);
+                return true;
+            }
+
+            Log::error('WahaClient::sendText failed with HTTP error', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+                'url'    => $url,
+            ]);
+
+            return false;
         } catch (\Throwable $e) {
-            Log::error('WahaClient::sendText failed', ['error' => $e->getMessage(), 'chatId' => $chatId]);
+            Log::error('WahaClient::sendText exception', ['error' => $e->getMessage(), 'chatId' => $chatId]);
             return false;
         }
     }
