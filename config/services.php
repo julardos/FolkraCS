@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'openrouter' => [
+        'key' => env('LKHM_OR_API_KEY', env('OPENROUTER_API_KEY')),
+        'model' => env('LKHM_OR_MODEL', env('OPENROUTER_MODEL', 'openai/gpt-4o-mini')),
+    ],
+
 ];

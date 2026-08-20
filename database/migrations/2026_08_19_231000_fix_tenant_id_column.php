@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         // If tenant_id exists and is not varchar, replace it with a string column compatible with stancl tenants.id
-        if (Schema::hasColumn('users', 'tenant_id')) {
+        if (Schema::hasColumn('users', 'tenant_id') && DB::getDriverName() === 'mysql') {
             // Inspect column type
             $row = DB::selectOne("SHOW COLUMNS FROM users WHERE Field = 'tenant_id'");
             if ($row && stripos($row->Type, 'varchar') === false) {
@@ -26,7 +26,7 @@ return new class extends Migration
                 $table->string('tenant_id')->nullable()->after('client_id');
                 $table->foreign('tenant_id')->references('id')->on('tenants')->nullOnDelete();
             });
-        } else {
+        } elseif (DB::getDriverName() === 'mysql') {
             // ensure foreign key exists
             try {
                 DB::statement("ALTER TABLE users ADD CONSTRAINT users_tenant_id_foreign FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE SET NULL");

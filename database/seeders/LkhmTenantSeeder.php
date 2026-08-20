@@ -73,6 +73,14 @@ class LkhmTenantSeeder extends Seeder
             ]
         );
         $this->command->info("Admin user: {$adminEmail} / {$adminPassword}");
+
+        // ── 5. Default Settings ───────────────────────────────────────────────
+        \App\Models\Setting::set('wa.base_url', env('LKHM_WA_BASE_URL'));
+        \App\Models\Setting::set('wa.api_key', env('LKHM_WA_API_KEY'));
+        \App\Models\Setting::set('wa.session', env('LKHM_WA_SESSION'));
+        \App\Models\Setting::set('ai.api_key', env('LKHM_OR_API_KEY'));
+        \App\Models\Setting::set('ai.model', env('LKHM_OR_MODEL', 'openai/gpt-4o-mini'));
+        \App\Models\Setting::set('ai.system_prompt', $this->aiInstruction());
     }
 
     private function aiInstruction(): string

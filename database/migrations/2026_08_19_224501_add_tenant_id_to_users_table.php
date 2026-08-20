@@ -9,6 +9,16 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            if (! Schema::hasColumn('users', 'tenant_id')) {
+                Schema::table('users', function (Blueprint $table) {
+                    $table->string('tenant_id')->nullable();
+                    $table->foreign('tenant_id')->references('id')->on('tenants')->nullOnDelete();
+                });
+            }
+            return;
+        }
+
         $tenantIdColumn = DB::selectOne("SHOW COLUMNS FROM tenants WHERE Field = 'id'");
         $tenantIdType = $this->normalizeType((string) ($tenantIdColumn->Type ?? 'varchar(255)'));
 

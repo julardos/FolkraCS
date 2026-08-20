@@ -2,6 +2,7 @@
 
 namespace Modules\WhatsApp\Services;
 
+use App\Models\Client;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -11,10 +12,19 @@ class WahaClient
     private string $baseUrl;
     private string $apiKey;
 
-    public function __construct()
+    public function __construct(?Client $client = null)
     {
-        $this->baseUrl = rtrim(Setting::get('wa.base_url', ''), '/');
-        $this->apiKey  = Setting::get('wa.api_key', '');
+        $client = $client ?? Client::first();
+
+        $url = $client?->wa_base_url
+            ?? Setting::get('wa.base_url')
+            ?? env('LKHM_WA_BASE_URL', '');
+
+        $this->baseUrl = rtrim((string) $url, '/');
+
+        $this->apiKey = $client?->wa_api_key
+            ?? Setting::get('wa.api_key')
+            ?? env('LKHM_WA_API_KEY', '');
     }
 
     public function sendText(string $chatId, string $text, string $session): bool

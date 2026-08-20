@@ -2,6 +2,7 @@
 
 namespace Modules\AI\Services;
 
+use App\Models\Client;
 use App\Models\Setting;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -13,10 +14,19 @@ class OpenRouterClient
     private string $model;
     private string $baseUrl = 'https://openrouter.ai/api/v1';
 
-    public function __construct()
+    public function __construct(?Client $client = null)
     {
-        $this->apiKey = Setting::get('ai.api_key', config('services.openrouter.api_key', ''));
-        $this->model  = Setting::get('ai.model', 'openai/gpt-4o-mini');
+        $client = $client ?? Client::first();
+
+        $this->apiKey = $client?->openrouter_api_key
+            ?? Setting::get('ai.api_key')
+            ?? config('services.openrouter.key')
+            ?? env('LKHM_OR_API_KEY', '');
+
+        $this->model = $client?->openrouter_model
+            ?? Setting::get('ai.model')
+            ?? config('services.openrouter.model')
+            ?? env('LKHM_OR_MODEL', 'openai/gpt-4o-mini');
     }
 
     public function chat(string $systemPrompt, array $messages): string

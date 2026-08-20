@@ -2,6 +2,7 @@
 
 namespace Modules\AI\Services;
 
+use App\Models\Client;
 use App\Models\KnowledgeBase;
 use App\Models\PromptBlock;
 use App\Models\Setting;
@@ -17,6 +18,14 @@ class PromptBuilder
         $promptBlocks = PromptBlock::enabled()->get();
         foreach ($promptBlocks as $block) {
             $blocks[] = $this->interpolate($block->content);
+        }
+
+        // Fallback system prompt if no prompt blocks found
+        if (empty($blocks)) {
+            $fallbackInstruction = Client::first()?->ai_instruction
+                ?? Setting::get('ai.system_prompt')
+                ?? 'You are a helpful AI customer service assistant.';
+            $blocks[] = $this->interpolate($fallbackInstruction);
         }
 
         // Append active knowledge base entries

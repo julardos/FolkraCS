@@ -9,6 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') {
+            return;
+        }
+
         // Update existing values before changing enum
         DB::statement("UPDATE users SET role = 'landlord' WHERE role = 'admin' AND tenant_id IS NULL");
         DB::statement("UPDATE users SET role = 'admin'   WHERE role = 'admin' AND tenant_id IS NOT NULL");
