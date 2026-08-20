@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Modules\AI\Jobs\ProcessMessageJob;
 use Modules\WhatsApp\DTOs\IncomingMessage;
 
@@ -13,9 +14,24 @@ class WebhookController extends Controller
 {
     public function receive(Request $request): Response
     {
-        $msg = IncomingMessage::fromWebhook($request->input('body', $request->all()));
+        $payload = $request->input('body', $request->all());
+        $msg     = IncomingMessage::fromWebhook($payload);
+
+        Log::info('WAHA Webhook Triggered', [
+            'event'   => $msg->event,
+            'session' => $msg->session,
+            'chat_id' => $msg->chatId,
+            'phone'   => $msg->senderPhone,
+            'from_me' => $msg->fromMe,
+            'body'    => $msg->body,
+        ]);
 
         if (! $msg->isProcessable()) {
+            Log::debug('WAHA Webhook: Message not processable (skipped)', [
+                'event'   => $msg->event,
+                'from_me' => $msg->fromMe,
+                'chat_id' => $msg->chatId,
+            ]);
             return response('', 200);
         }
 
@@ -35,8 +51,19 @@ class WebhookController extends Controller
 
         // Human takeover active — AI stays silent
         if ($customer->is_human_takeover) {
+            Log::info('WAHA Webhook: Human takeover active for customer, skipping AI response', [
+                'customer_id' => $customer->id,
+                'phone'       => $customer->phone,
+            ]);
             return response('', 200);
         }
+
+        Log::info('WAHA Webhook: Message dispatched to AI ProcessMessageJob', [
+            'customer_id' => $customer->id,
+            'phone'       => $customer->phone,
+            'chat_id'     => $msg->chatId,
+            'session'     => $msg->session,
+        ]);
 
         ProcessMessageJob::dispatch($customer, $msg->chatId, $msg->body, $msg->session);
 
