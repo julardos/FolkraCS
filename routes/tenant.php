@@ -8,7 +8,6 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Tenant\AiSettingsController;
 use App\Http\Controllers\Tenant\ConversationController;
-use App\Http\Controllers\Tenant\DashboardController;
 use App\Http\Controllers\Tenant\EscalationController;
 use App\Http\Controllers\Tenant\KnowledgeBaseController;
 use App\Http\Controllers\Tenant\LiveAgentController;
