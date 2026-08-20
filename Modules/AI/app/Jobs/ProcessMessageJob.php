@@ -87,5 +87,8 @@ class ProcessMessageJob implements ShouldQueue
             $notifier->notify($ticket);
             $conversation->update(['status' => 'escalated']);
         }
+
+        // Rolling memory summarization for older messages
+        $memory->summarizeIfNeeded($conversation, $ai);
     }
 }

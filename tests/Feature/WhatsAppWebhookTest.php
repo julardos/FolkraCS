@@ -191,4 +191,64 @@ class WhatsAppWebhookTest extends TestCase
         $this->assertEquals('client/model-789', $refAiModel->getValue($ai));
         $this->assertStringContainsString('System prompt from Client DB', $promptBuilder->build());
     }
+
+    public function test_conversation_memory_injects_rolling_summary(): void
+    {
+        $customer = Customer::create(['phone' => '6281111111111']);
+        $conversation = \App\Models\Conversation::create([
+            'customer_id' => $customer->id,
+            'wa_session'  => 'test_session',
+            'status'      => 'active',
+            'summary'     => 'Klien berkonsultasi mengenai sengketa tanah warisan.',
+        ]);
+
+        $conversation->messages()->create(['role' => 'user', 'content' => 'Bagaimana syaratnya?']);
+        $conversation->messages()->create(['role' => 'assistant', 'content' => 'Perlu bawa KTP dan surat tanah.']);
+
+        $memory = new \Modules\AI\Services\ConversationMemory();
+        $history = $memory->load($conversation, limit: 6);
+
+        $this->assertCount(3, $history);
+        $this->assertEquals('system', $history[0]['role']);
+        $this->assertStringContainsString('Klien berkonsultasi mengenai sengketa tanah warisan.', $history[0]['content']);
+        $this->assertEquals('Bagaimana syaratnya?', $history[1]['content']);
+        $this->assertEquals('Perlu bawa KTP dan surat tanah.', $history[2]['content']);
+    }
+
+    public function test_conversation_memory_summarizes_when_threshold_reached(): void
+    {
+        Http::fake([
+            'https://openrouter.ai/api/v1/chat/completions' => Http::response([
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => 'Ringkasan: Klien menanyakan konsultasi sengketa kerja dan telah dijelaskan persyaratannya.',
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $customer = Customer::create(['phone' => '6282222222222']);
+        $conversation = \App\Models\Conversation::create([
+            'customer_id' => $customer->id,
+            'wa_session'  => 'test_session',
+            'status'      => 'active',
+        ]);
+
+        // Create 10 messages (exceeding threshold of 8)
+        for ($i = 1; $i <= 5; $i++) {
+            $conversation->messages()->create(['role' => 'user', 'content' => "Pertanyaan {$i}"]);
+            $conversation->messages()->create(['role' => 'assistant', 'content' => "Jawaban {$i}"]);
+        }
+
+        $memory = new \Modules\AI\Services\ConversationMemory();
+        $ai = new \Modules\AI\Services\OpenRouterClient();
+
+        $memory->summarizeIfNeeded($conversation, $ai, threshold: 8, keepRecent: 6);
+
+        $conversation->refresh();
+        $this->assertNotEmpty($conversation->summary);
+        $this->assertStringContainsString('Ringkasan: Klien menanyakan konsultasi', $conversation->summary);
+    }
 }

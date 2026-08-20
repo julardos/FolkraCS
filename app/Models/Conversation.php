@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Conversation extends Model
 {
-    protected $fillable = ['customer_id', 'wa_session', 'status'];
+    protected $fillable = ['customer_id', 'wa_session', 'status', 'summary'];
 
     public function customer(): BelongsTo
     {
