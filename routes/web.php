@@ -6,6 +6,7 @@ use App\Http\Controllers\Landlord\DashboardController as LandlordDashboardContro
 use App\Http\Controllers\Landlord\LiveAgentController as LandlordLiveAgentController;
 use App\Http\Controllers\Landlord\TenantController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Middleware\EnsureLandlord;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -26,8 +27,8 @@ Route::domain($landlordDomain)->group(function () {
     // Auth (login/logout on landlord domain)
     require __DIR__ . '/auth.php';
 
-    // Landlord authenticated routes
-    Route::middleware('auth')->group(function () {
+    // Landlord authenticated routes (role: landlord only)
+    Route::middleware(['auth', EnsureLandlord::class])->group(function () {
 
         Route::get('/dashboard', [LandlordDashboardController::class, 'index'])->name('landlord.dashboard');
 

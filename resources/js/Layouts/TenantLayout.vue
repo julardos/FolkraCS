@@ -2,19 +2,21 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import {
-  LayoutDashboard, Database, Bot, AlertTriangle, MessageSquare, LogOut
+  LayoutDashboard, Database, Bot, AlertTriangle, MessageSquare, LogOut, Users
 } from 'lucide-vue-next';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+const isAdmin = computed(() => user.value?.role === 'admin');
 
-const nav = [
-  { label: 'Dashboard',      href: '/dashboard',     icon: LayoutDashboard },
-  { label: 'AI Settings',    href: '/ai-settings',   icon: Bot },
-  { label: 'Knowledge Base', href: '/knowledge-base', icon: Database },
-  { label: 'Escalation',     href: '/escalation',    icon: AlertTriangle },
-  { label: 'Conversations',  href: '/conversations',  icon: MessageSquare },
-];
+const nav = computed(() => [
+  { label: 'Dashboard',      href: '/dashboard',      icon: LayoutDashboard, adminOnly: false },
+  { label: 'Conversations',  href: '/conversations',  icon: MessageSquare,   adminOnly: false },
+  { label: 'AI Settings',    href: '/ai-settings',    icon: Bot,             adminOnly: true },
+  { label: 'Knowledge Base', href: '/knowledge-base', icon: Database,        adminOnly: true },
+  { label: 'Escalation',     href: '/escalation',     icon: AlertTriangle,   adminOnly: true },
+  { label: 'Team',           href: '/users',          icon: Users,           adminOnly: true },
+].filter(item => !item.adminOnly || isAdmin.value));
 </script>
 
 <template>
