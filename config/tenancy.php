@@ -19,11 +19,7 @@ return [
     'central_domains' => array_filter(array_unique([
         '127.0.0.1',
         'localhost',
-        'landlord.localhost',
-        'folkra-cs.test',
-        'landlord.folkra-cs.test',
-        'folkra.co',                             // production landlord domain
-        env('LANDLORD_DOMAIN', 'folkra.co'),     // overridable via .env
+        env('LANDLORD_DOMAIN', 'folkra.co'),
     ])),
 
     /**
