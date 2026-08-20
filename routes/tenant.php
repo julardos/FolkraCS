@@ -13,12 +13,15 @@ use App\Http\Controllers\Tenant\KnowledgeBaseController;
 use App\Http\Controllers\Tenant\LiveAgentController;
 use App\Http\Controllers\Tenant\UserController;
 use App\Http\Middleware\EnsureTenantAdmin;
+use App\Http\Middleware\LogTenantInit;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 Route::middleware([
     'web',
+    LogTenantInit::class,
     PreventAccessFromCentralDomains::class,
     InitializeTenancyByDomain::class,
 ])->group(function () {
