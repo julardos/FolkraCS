@@ -27,11 +27,6 @@ class WebhookController extends Controller
         ]);
 
         if (! $msg->isProcessable()) {
-            Log::debug('WAHA Webhook: Message not processable (skipped)', [
-                'event'   => $msg->event,
-                'from_me' => $msg->fromMe,
-                'chat_id' => $msg->chatId,
-            ]);
             return response('', 200);
         }
 
@@ -51,19 +46,8 @@ class WebhookController extends Controller
 
         // Human takeover active — AI stays silent
         if ($customer->is_human_takeover) {
-            Log::info('WAHA Webhook: Human takeover active for customer, skipping AI response', [
-                'customer_id' => $customer->id,
-                'phone'       => $customer->phone,
-            ]);
             return response('', 200);
         }
-
-        Log::info('WAHA Webhook: Message dispatched to AI ProcessMessageJob', [
-            'customer_id' => $customer->id,
-            'phone'       => $customer->phone,
-            'chat_id'     => $msg->chatId,
-            'session'     => $msg->session,
-        ]);
 
         ProcessMessageJob::dispatch($customer, $msg->chatId, $msg->body, $msg->session);
 

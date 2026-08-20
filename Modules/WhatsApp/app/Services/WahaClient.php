@@ -11,6 +11,7 @@ class WahaClient
 {
     private string $baseUrl;
     private string $apiKey;
+    private string $session;
 
     public function __construct(?Client $client = null)
     {
@@ -25,18 +26,18 @@ class WahaClient
         $this->apiKey = $client?->wa_api_key
             ?? Setting::get('wa.api_key')
             ?? env('LKHM_WA_API_KEY', '');
+
+        $this->session = $client?->wa_session
+            ?? Setting::get('wa.session')
+            ?? env('LKHM_WA_SESSION', 'default');
     }
 
-    public function sendText(string $chatId, string $text, string $session): bool
+    public function sendText(string $chatId, string $text, ?string $session = null): bool
     {
+        $sessionName = ! empty($session) ? $session : $this->session;
+
         try {
             $url = "{$this->baseUrl}/api/sendText";
-            Log::info('WahaClient::sendText sending HTTP POST', [
-                'url'      => $url,
-                'chatId'   => $chatId,
-                'session'  => $session,
-                'has_key'  => $this->apiKey,
-            ]);
 
             $response = Http::withHeaders(['X-Api-Key' => $this->apiKey])
                 ->withoutVerifying()
@@ -44,15 +45,11 @@ class WahaClient
                 ->post($url, [
                     'chatId'      => $chatId,
                     'text'        => $text,
-                    'session'     => $session,
+                    'session'     => $sessionName,
                     'linkPreview' => true,
                 ]);
 
             if ($response->successful()) {
-                Log::info('WahaClient::sendText success', [
-                    'status'   => $response->status(),
-                    'response' => $response->json(),
-                ]);
                 return true;
             }
 

@@ -54,10 +54,6 @@ class ProcessMessageJob implements ShouldQueue
 
         // Call AI
         try {
-            Log::info('ProcessMessageJob: Sending message to OpenRouter AI', [
-                'customer_id' => $this->customer->id,
-                'phone'       => $this->customer->phone,
-            ]);
             $rawOutput = $ai->chat($systemPrompt, $history);
         } catch (\Throwable $e) {
             Log::error('ProcessMessageJob: AI call failed', ['error' => $e->getMessage(), 'customer' => $this->customer->id]);
@@ -82,12 +78,6 @@ class ProcessMessageJob implements ShouldQueue
                 ? $this->customer->phone . '@c.us'
                 : $this->chatId;
 
-            Log::info('ProcessMessageJob: Sending response via WAHA sendText', [
-                'chat_id'        => $targetChatId,
-                'original_chat' => $this->chatId,
-                'session'        => $this->session,
-                'reply'          => $parsed->humanMessage,
-            ]);
             $waha->sendText($targetChatId, $parsed->humanMessage, $this->session);
         }
 

@@ -18,12 +18,6 @@ class AuthenticatedSessionController extends Controller
 {
     public function create(): Response
     {
-        Log::channel('single')->info('[LOGIN PAGE]', [
-            'host'    => request()->getHost(),
-            'url'     => request()->fullUrl(),
-            'session' => session()->getId(),
-        ]);
-
         return Inertia::render('Auth/Login', [
             'canResetPassword' => true,
             'status'           => session('status'),
@@ -32,38 +26,12 @@ class AuthenticatedSessionController extends Controller
 
     public function store(LoginRequest $request): RedirectResponse
     {
-        Log::channel('single')->info('[LOGIN ATTEMPT]', [
-            'host'    => $request->getHost(),
-            'email'   => $request->email,
-            'session' => session()->getId(),
-            'csrf'    => $request->header('X-XSRF-TOKEN') ? 'present' : 'missing',
-        ]);
-
-        try {
-            $request->authenticate();
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::channel('single')->warning('[LOGIN FAILED]', [
-                'email'  => $request->email,
-                'errors' => $e->errors(),
-                'host'   => $request->getHost(),
-            ]);
-            throw $e;
-        }
-
+        $request->authenticate();
         $request->session()->regenerate();
         $user = Auth::user();
 
-        Log::channel('single')->info('[LOGIN SUCCESS]', [
-            'user_id'   => $user->id,
-            'email'     => $user->email,
-            'role'      => $user->role,
-            'tenant_id' => $user->tenant_id,
-            'host'      => $request->getHost(),
-        ]);
-
         // Landlord
         if ($user->role === 'landlord') {
-            Log::channel('single')->info('[REDIRECT] landlord → /dashboard');
             return redirect()->intended('/dashboard');
         }
 
@@ -73,14 +41,7 @@ class AuthenticatedSessionController extends Controller
             $suffix        = env('TENANT_DOMAIN_SUFFIX', 'folkra.co');
             $tenantDomains = Domain::where('tenant_id', $user->tenant_id)->pluck('domain');
 
-            Log::channel('single')->info('[TENANT REDIRECT CHECK]', [
-                'current_host'   => $currentHost,
-                'tenant_domains' => $tenantDomains->toArray(),
-                'suffix'         => $suffix,
-            ]);
-
             if ($tenantDomains->contains($currentHost)) {
-                Log::channel('single')->info('[REDIRECT] same domain → /dashboard');
                 return redirect()->intended('/dashboard');
             }
 
@@ -92,11 +53,8 @@ class AuthenticatedSessionController extends Controller
             if ($domain) {
                 $scheme = $request->isSecure() ? 'https' : 'http';
                 $target = "{$scheme}://{$domain->domain}/dashboard";
-                Log::channel('single')->info("[REDIRECT] away → {$target}");
                 return redirect()->away($target);
             }
-
-            Log::channel('single')->warning('[REDIRECT] no domain found, falling back to /dashboard');
         }
 
         return redirect()->intended('/dashboard');
