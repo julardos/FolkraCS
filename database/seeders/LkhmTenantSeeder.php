@@ -3,11 +3,11 @@
 namespace Database\Seeders;
 
 use App\Models\Client;
-use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Stancl\Tenancy\Database\Models\Domain;
+use Stancl\Tenancy\Database\Models\Tenant;
 
 class LkhmTenantSeeder extends Seeder
 {
@@ -31,7 +31,9 @@ class LkhmTenantSeeder extends Seeder
         ];
 
         foreach ($domains as $domain) {
-            Domain::firstOrCreate(
+            // Use updateOrCreate so an existing domain with wrong tenant_id (e.g. "0")
+            // is repaired instead of silently kept.
+            Domain::updateOrCreate(
                 ['domain' => $domain],
                 ['tenant_id' => $tenantId]
             );
