@@ -77,12 +77,18 @@ class ProcessMessageJob implements ShouldQueue
 
         // Send reply to customer
         if (! empty($parsed->humanMessage)) {
+            // If chatId is a @lid format, fallback to phone@c.us for WAHA sendText reliability
+            $targetChatId = str_ends_with($this->chatId, '@lid') && ! empty($this->customer->phone)
+                ? $this->customer->phone . '@c.us'
+                : $this->chatId;
+
             Log::info('ProcessMessageJob: Sending response via WAHA sendText', [
-                'chat_id' => $this->chatId,
-                'session' => $this->session,
-                'reply'   => $parsed->humanMessage,
+                'chat_id'        => $targetChatId,
+                'original_chat' => $this->chatId,
+                'session'        => $this->session,
+                'reply'          => $parsed->humanMessage,
             ]);
-            $waha->sendText($this->chatId, $parsed->humanMessage, $this->session);
+            $waha->sendText($targetChatId, $parsed->humanMessage, $this->session);
         }
 
         // Handle kendala
