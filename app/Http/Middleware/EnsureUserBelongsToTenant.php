@@ -34,7 +34,7 @@ class EnsureUserBelongsToTenant
                 return response()->json(['message' => 'Unauthorized for this tenant.'], 403);
             }
 
-            return redirect()->route('login')->withErrors(['tenant' => 'Your account does not belong to this tenant.']);
+            return redirect('/login')->withErrors(['tenant' => 'Your account does not belong to this tenant.']);
         }
 
         return $next($request);

@@ -26,16 +26,12 @@ Route::middleware([
 
     Route::get('/', fn() => redirect('/dashboard'));
 
-    // Login on tenant domain redirects to central login.
-    // SESSION_DOMAIN=.folkra.co means the session cookie is shared across all subdomains,
-    // so the user only needs to log in once on the central domain.
-    Route::get('/login', function () {
-        $landlord = env('LANDLORD_DOMAIN', 'folkra.co');
-        $scheme   = request()->isSecure() ? 'https' : 'http';
-        return redirect()->away("{$scheme}://{$landlord}/login");
-    })->name('login');
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('tenant.login');
+        Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('tenant.login.store');
+    });
 
-    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('tenant.logout');
 
     // Authenticated tenant routes
     Route::middleware(['auth'])->group(function () {
