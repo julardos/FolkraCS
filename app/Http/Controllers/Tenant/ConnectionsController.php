@@ -113,90 +113,21 @@ class ConnectionsController extends Controller
 
     // ── Instagram OAuth ───────────────────────────────────────────────────
 
-    public function instagramConnect(Request $request)
+    public function instagramConnect()
     {
-        $appId       = config('services.meta.app_id');
-        $redirectUri = config('services.meta.redirect_uri');
+        // Encode tenant ID in state so the central callback knows which client to update.
+        // encrypt() signs + encrypts, so it can't be tampered with.
+        $state = encrypt(['tenant_id' => tenant('id'), 'ts' => now()->timestamp]);
 
         $params = http_build_query([
-            'client_id'     => $appId,
-            'redirect_uri'  => $redirectUri,
+            'client_id'     => config('services.meta.app_id'),
+            'redirect_uri'  => config('services.meta.redirect_uri'),
             'scope'         => 'instagram_manage_messages,instagram_basic,pages_show_list,pages_messaging',
             'response_type' => 'code',
-            'state'         => csrf_token(),
+            'state'         => $state,
         ]);
 
         return redirect("https://www.facebook.com/v20.0/dialog/oauth?{$params}");
-    }
-
-    public function instagramCallback(Request $request)
-    {
-        if ($request->has('error')) {
-            return redirect('/connections')->withErrors(['instagram' => $request->input('error_description', 'Authorization denied.')]);
-        }
-
-        $code        = $request->input('code');
-        $appId       = config('services.meta.app_id');
-        $appSecret   = config('services.meta.app_secret');
-        $redirectUri = config('services.meta.redirect_uri');
-
-        // 1. Exchange code → short-lived user access token
-        $tokenRes = Http::post('https://graph.facebook.com/v20.0/oauth/access_token', [
-            'client_id'     => $appId,
-            'client_secret' => $appSecret,
-            'redirect_uri'  => $redirectUri,
-            'code'          => $code,
-        ]);
-
-        if (! $tokenRes->successful()) {
-            Log::error('Instagram token exchange failed', $tokenRes->json());
-            return redirect('/connections')->withErrors(['instagram' => 'Token exchange failed.']);
-        }
-
-        $shortLivedToken = $tokenRes->json('access_token');
-
-        // 2. Exchange for long-lived token (60 days)
-        $longRes = Http::get('https://graph.facebook.com/v20.0/oauth/access_token', [
-            'grant_type'        => 'fb_exchange_token',
-            'client_id'         => $appId,
-            'client_secret'     => $appSecret,
-            'fb_exchange_token' => $shortLivedToken,
-        ]);
-
-        $longToken   = $longRes->successful() ? $longRes->json('access_token') : $shortLivedToken;
-        $expiresIn   = $longRes->successful() ? $longRes->json('expires_in', 5183944) : 5183944;
-
-        // 3. Get Instagram accounts via connected Facebook pages
-        $pagesRes = Http::get('https://graph.facebook.com/v20.0/me/accounts', [
-            'access_token' => $longToken,
-            'fields'       => 'instagram_business_account{id,username},name',
-        ]);
-
-        $igAccountId = null;
-        $igUsername  = null;
-
-        if ($pagesRes->successful()) {
-            foreach ($pagesRes->json('data', []) as $page) {
-                $ig = $page['instagram_business_account'] ?? null;
-                if ($ig) {
-                    $igAccountId = $ig['id'];
-                    $igUsername  = $ig['username'] ?? null;
-                    break;
-                }
-            }
-        }
-
-        $this->client()->update([
-            'instagram_access_token'    => $longToken,
-            'instagram_account_id'      => $igAccountId,
-            'instagram_username'        => $igUsername,
-            'instagram_token_expires_at'=> now()->addSeconds($expiresIn),
-        ]);
-
-        return redirect('/connections')->with('success', $igUsername
-            ? "Instagram connected as @{$igUsername}."
-            : 'Instagram token saved. No Instagram Business account found on your Facebook pages — check your Meta setup.'
-        );
     }
 
     public function instagramDisconnect()

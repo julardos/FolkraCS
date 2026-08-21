@@ -6,6 +6,7 @@ use App\Http\Controllers\Landlord\ConversationController as LandlordConversation
 use App\Http\Controllers\Landlord\LiveAgentController as LandlordLiveAgentController;
 use App\Http\Controllers\Landlord\TenantController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Landlord\InstagramCallbackController;
 use App\Http\Controllers\Webhooks\InstagramWebhookController;
 use App\Http\Middleware\EnsureLandlord;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +18,9 @@ Route::domain($landlordDomain)->group(function () {
     // Instagram webhook — no auth, Meta calls this directly
     Route::get('/webhooks/instagram',  [InstagramWebhookController::class, 'verify'])->name('instagram.webhook.verify');
     Route::post('/webhooks/instagram', [InstagramWebhookController::class, 'receive'])->name('instagram.webhook.receive')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
+    // Instagram OAuth callback — central, no auth required (comes from Meta redirect)
+    Route::get('/instagram/callback', InstagramCallbackController::class)->name('instagram.callback');
 
     Route::get('/', fn() => auth()->check() ? redirect('/dashboard') : redirect('/login'));
 

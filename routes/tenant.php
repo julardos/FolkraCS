@@ -52,7 +52,6 @@ Route::middleware([
             Route::get('/connections/wa/qr', [ConnectionsController::class, 'waQr'])->name('tenant.connections.wa-qr');
             Route::post('/connections/wa/start', [ConnectionsController::class, 'waStart'])->name('tenant.connections.wa-start');
             Route::get('/connections/instagram', [ConnectionsController::class, 'instagramConnect'])->name('tenant.connections.instagram');
-            Route::get('/connections/instagram/callback', [ConnectionsController::class, 'instagramCallback'])->name('tenant.connections.instagram-callback');
             Route::delete('/connections/instagram', [ConnectionsController::class, 'instagramDisconnect'])->name('tenant.connections.instagram-disconnect');
         });
 
