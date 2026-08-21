@@ -20,7 +20,7 @@ Route::domain($landlordDomain)->group(function () {
     Route::post('/webhooks/instagram', [InstagramWebhookController::class, 'receive'])->name('instagram.webhook.receive')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
     // Instagram OAuth callback — central, no auth required (comes from Meta redirect)
-    Route::get('/instagram/callback', InstagramCallbackController::class)->name('instagram.callback');
+    Route::get('/instagram/callback', [InstagramCallbackController::class, '__invoke'])->name('instagram.callback');
 
     Route::get('/', fn() => auth()->check() ? redirect('/dashboard') : redirect('/login'));
 
