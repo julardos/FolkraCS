@@ -28,9 +28,13 @@ class PromptBuilder
             $blocks[] = $this->interpolate($fallbackInstruction);
         }
 
-        // Append active knowledge base entries
-        $kbEntries = KnowledgeBase::active()->get();
-        foreach ($kbEntries as $kb) {
+        // Append active knowledge base entries (scoped to this client)
+        $client    = Client::first();
+        $kbQuery   = KnowledgeBase::active();
+        if ($client) {
+            $kbQuery->where('client_id', $client->id);
+        }
+        foreach ($kbQuery->get() as $kb) {
             $blocks[] = "### {$kb->title}\n{$kb->content}";
         }
 

@@ -6,12 +6,17 @@ use App\Http\Controllers\Landlord\ConversationController as LandlordConversation
 use App\Http\Controllers\Landlord\LiveAgentController as LandlordLiveAgentController;
 use App\Http\Controllers\Landlord\TenantController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Webhooks\InstagramWebhookController;
 use App\Http\Middleware\EnsureLandlord;
 use Illuminate\Support\Facades\Route;
 
 $landlordDomain = env('LANDLORD_DOMAIN', 'folkra.co');
 
 Route::domain($landlordDomain)->group(function () {
+
+    // Instagram webhook — no auth, Meta calls this directly
+    Route::get('/webhooks/instagram',  [InstagramWebhookController::class, 'verify'])->name('instagram.webhook.verify');
+    Route::post('/webhooks/instagram', [InstagramWebhookController::class, 'receive'])->name('instagram.webhook.receive')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
     Route::get('/', fn() => auth()->check() ? redirect('/dashboard') : redirect('/login'));
 

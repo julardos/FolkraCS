@@ -6,7 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class KnowledgeBase extends Model
 {
-    protected $fillable = ['title', 'content', 'is_active', 'sort_order'];
+    protected $fillable = [
+        'client_id', 'title', 'type', 'file_name', 'file_path',
+        'content', 'is_active', 'sort_order',
+    ];
 
     protected $casts = [
         'is_active' => 'boolean',

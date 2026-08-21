@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Tenant\AiSettingsController;
+use App\Http\Controllers\Tenant\ConnectionsController;
 use App\Http\Controllers\Tenant\ConversationController;
 use App\Http\Controllers\Tenant\EscalationController;
 use App\Http\Controllers\Tenant\KnowledgeBaseController;
@@ -44,6 +45,17 @@ Route::middleware([
         Route::post('/customers/{customer}/takeover', [LiveAgentController::class, 'enable'])->name('tenant.takeover.enable');
         Route::delete('/customers/{customer}/takeover', [LiveAgentController::class, 'disable'])->name('tenant.takeover.disable');
 
+        // Connections — WA QR proxy + Instagram OAuth (admin only)
+        Route::middleware([EnsureTenantAdmin::class])->group(function () {
+            Route::get('/connections', [ConnectionsController::class, 'index'])->name('tenant.connections');
+            Route::get('/connections/wa/status', [ConnectionsController::class, 'waStatus'])->name('tenant.connections.wa-status');
+            Route::get('/connections/wa/qr', [ConnectionsController::class, 'waQr'])->name('tenant.connections.wa-qr');
+            Route::post('/connections/wa/start', [ConnectionsController::class, 'waStart'])->name('tenant.connections.wa-start');
+            Route::get('/connections/instagram', [ConnectionsController::class, 'instagramConnect'])->name('tenant.connections.instagram');
+            Route::get('/connections/instagram/callback', [ConnectionsController::class, 'instagramCallback'])->name('tenant.connections.instagram-callback');
+            Route::delete('/connections/instagram', [ConnectionsController::class, 'instagramDisconnect'])->name('tenant.connections.instagram-disconnect');
+        });
+
         // Admin-only routes (configure the bot)
         Route::middleware([EnsureTenantAdmin::class])->group(function () {
 
@@ -52,6 +64,7 @@ Route::middleware([
 
             Route::get('/knowledge-base', [KnowledgeBaseController::class, 'index'])->name('tenant.knowledge-base');
             Route::post('/knowledge-base', [KnowledgeBaseController::class, 'store'])->name('tenant.knowledge-base.store');
+            Route::post('/knowledge-base/upload', [KnowledgeBaseController::class, 'store'])->name('tenant.knowledge-base.upload');
             Route::put('/knowledge-base/{kb}', [KnowledgeBaseController::class, 'update'])->name('tenant.knowledge-base.update');
             Route::delete('/knowledge-base/{kb}', [KnowledgeBaseController::class, 'destroy'])->name('tenant.knowledge-base.destroy');
 

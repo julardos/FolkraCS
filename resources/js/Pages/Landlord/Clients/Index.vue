@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/AppLayout.vue';
 import { ref, computed } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
-import { Plus, Pencil, Trash2, Wifi, Bot, Key, ChevronDown, ChevronUp, ExternalLink, Mail } from 'lucide-vue-next';
+import { Plus, Pencil, Trash2, Wifi, Bot, Key, ChevronDown, ChevronUp, ExternalLink, Mail, MessageSquare, Instagram } from 'lucide-vue-next';
 import Card from '@/components/ui/card/Card.vue';
 import CardHeader from '@/components/ui/card/CardHeader.vue';
 import CardTitle from '@/components/ui/card/CardTitle.vue';
@@ -20,7 +20,13 @@ const props = defineProps({ clients: Array, landlordDomain: String });
 
 // ── New client form ──────────────────────────────────────────
 const showNewForm = ref(false);
+const CHANNEL_OPTIONS = [
+  { value: 'whatsapp',           label: 'WhatsApp only' },
+  { value: 'whatsapp_instagram', label: 'WhatsApp + Instagram' },
+];
+
 const form = useForm({
+  channels: 'whatsapp',
   name: '', business_type: '', slug: '',
   admin_name: '', admin_email: '', admin_password: '',
   wa_base_url: '', wa_api_key: '', wa_session: '',
@@ -92,12 +98,17 @@ const editForm = useForm({});
 function startEdit(client) {
   editingId.value = client.id;
   editForm.defaults({
+    channels: client.channels ?? 'whatsapp',
     name: client.name, business_type: client.business_type ?? '',
     status: client.status,
     wa_base_url: client.wa_base_url ?? '', wa_api_key: '', wa_session: client.wa_session ?? '',
     openrouter_api_key: '', openrouter_model: client.openrouter_model ?? 'openai/gpt-4o-mini',
     ai_instruction: client.ai_instruction ?? '',
   }).reset();
+}
+
+function channelLabel(value) {
+  return CHANNEL_OPTIONS.find(o => o.value === value)?.label ?? value;
 }
 
 function saveEdit(client) {
@@ -144,6 +155,21 @@ const expandedInstruction = ref(null);
       </CardHeader>
       <CardContent class="space-y-6">
         <div v-if="form.errors.server" class="p-3 rounded bg-red-50 text-red-700 text-sm">{{ form.errors.server }}</div>
+
+        <!-- Channels -->
+        <div class="space-y-1.5">
+          <Label>Channels *</Label>
+          <select
+            v-model="form.channels"
+            class="flex h-10 w-72 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option v-for="opt in CHANNEL_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
+          <p v-if="form.errors.channels" class="text-xs text-destructive">{{ form.errors.channels }}</p>
+        </div>
+
+        <Separator />
+
         <!-- Basic info -->
         <div class="grid grid-cols-3 gap-4">
           <div class="space-y-1.5">
@@ -269,6 +295,11 @@ const expandedInstruction = ref(null);
                   <div class="flex items-center gap-2">
                     <CardTitle class="text-base">{{ client.name }}</CardTitle>
                     <Badge :variant="statusVariant(client.status)">{{ client.status }}</Badge>
+                    <Badge variant="outline" class="gap-1 text-xs">
+                      <MessageSquare class="w-3 h-3" />
+                      <Instagram v-if="client.channels === 'whatsapp_instagram'" class="w-3 h-3" />
+                      {{ channelLabel(client.channels) }}
+                    </Badge>
                   </div>
                   <CardDescription>{{ client.business_type ?? '—' }} · Added {{ client.created_at }}</CardDescription>
                 </div>
@@ -370,6 +401,19 @@ const expandedInstruction = ref(null);
             <CardTitle>Editing: {{ client.name }}</CardTitle>
           </CardHeader>
           <CardContent class="space-y-5">
+            <!-- Channels -->
+            <div class="space-y-1.5">
+              <Label>Channels *</Label>
+              <select
+                v-model="editForm.channels"
+                class="flex h-10 w-72 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <option v-for="opt in CHANNEL_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+            </div>
+
+            <Separator />
+
             <div class="grid grid-cols-3 gap-4">
               <div class="space-y-1.5">
                 <Label>Client Name *</Label>

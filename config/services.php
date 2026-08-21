@@ -40,4 +40,11 @@ return [
         'model' => env('LKHM_OR_MODEL', env('OPENROUTER_MODEL', 'openai/gpt-4o-mini')),
     ],
 
+    'meta' => [
+        'app_id'               => env('META_APP_ID'),
+        'app_secret'           => env('META_APP_SECRET', env('META_SECRET')),
+        'redirect_uri'         => env('META_REDIRECT_URI'),
+        'webhook_verify_token' => env('META_WEBHOOK_VERIFY_TOKEN'),
+    ],
+
 ];

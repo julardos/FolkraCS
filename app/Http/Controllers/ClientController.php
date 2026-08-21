@@ -16,6 +16,7 @@ class ClientController extends Controller
             'clients' => Client::latest()->get()->map(fn($c) => [
                 'id'              => $c->id,
                 'name'            => $c->name,
+                'channels'        => $c->channels,
                 'business_type'   => $c->business_type,
                 'status'          => $c->status,
                 'wa_session'      => $c->wa_session,
@@ -32,6 +33,7 @@ class ClientController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'channels'           => 'required|in:whatsapp,whatsapp_instagram',
             'name'               => 'required|string|max:255',
             'business_type'      => 'nullable|string|max:255',
             'wa_base_url'        => 'nullable|url',
@@ -118,6 +120,7 @@ class ClientController extends Controller
     public function update(Request $request, Client $client)
     {
         $data = $request->validate([
+            'channels'           => 'required|in:whatsapp,whatsapp_instagram',
             'name'               => 'required|string|max:255',
             'business_type'      => 'nullable|string|max:255',
             'status'             => 'required|in:active,inactive,suspended',

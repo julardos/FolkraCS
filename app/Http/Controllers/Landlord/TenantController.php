@@ -22,6 +22,7 @@ class TenantController extends Controller
             'id'               => $c->id,
             'name'             => $c->name,
             'slug'             => $c->slug,
+            'channels'         => $c->channels,
             'business_type'    => $c->business_type,
             'status'           => $c->status,
             'tenant_id'        => $c->tenant_id,
@@ -48,6 +49,7 @@ class TenantController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'channels'           => 'required|in:whatsapp,whatsapp_instagram',
             'name'               => 'required|string|max:255',
             'business_type'      => 'nullable|string|max:255',
             'slug'               => 'required|string|alpha_dash|unique:clients,slug',
@@ -81,6 +83,7 @@ class TenantController extends Controller
             $client = Client::create([
                 'tenant_id'          => $tenantId,
                 'slug'               => $tenantId,
+                'channels'           => $data['channels'],
                 'name'               => $data['name'],
                 'business_type'      => $data['business_type'] ?? null,
                 'wa_base_url'        => $data['wa_base_url'] ?? null,
