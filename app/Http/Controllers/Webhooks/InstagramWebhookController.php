@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Webhooks;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessInstagramMessageJob;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -68,18 +69,10 @@ class InstagramWebhookController extends Controller
         $text = $message['text'] ?? null;
 
         if (! $text) {
-            // Attachments, stickers, etc. — ignore for now
             return;
         }
 
-        Log::info('Instagram DM received', [
-            'client'   => $client->name,
-            'sender'   => $senderId,
-            'message'  => $text,
-        ]);
-
-        // TODO: dispatch ProcessInstagramMessageJob($client, $senderId, $text)
-        // This will mirror ProcessMessageJob but for Instagram DMs
+        ProcessInstagramMessageJob::dispatch($client, $senderId, $text);
     }
 
     private function isValidSignature(Request $request): bool
