@@ -20,8 +20,6 @@ class Client extends Model
 
     protected $hidden = ['wa_api_key', 'openrouter_api_key'];
 
-    protected $casts = [];
-
     public function getMaskedWaKeyAttribute(): string
     {
         return $this->wa_api_key ? '••••' . substr($this->wa_api_key, -4) : '—';
