@@ -18,11 +18,15 @@ class DashboardController extends Controller
         );
 
         return Inertia::render('Tenant/Dashboard', [
-            'client'              => ['name' => $client->name, 'status' => $client->status],
-            'stats' => [
-                'conversations'   => Conversation::where('client_id', $client->id)->count(),
-                'active'          => Conversation::where('client_id', $client->id)->where('status', 'active')->count(),
-                'open_tickets'    => SupportTicket::where('client_id', $client->id)->where('status', 'open')->count(),
+            'client' => ['name' => $client->name, 'status' => $client->status],
+            'wa'     => [
+                'session'    => $client->wa_session,
+                'configured' => (bool) ($client->wa_base_url && $client->wa_session),
+            ],
+            'stats'  => [
+                'conversations' => Conversation::where('client_id', $client->id)->count(),
+                'active'        => Conversation::where('client_id', $client->id)->where('status', 'active')->count(),
+                'open_tickets'  => SupportTicket::where('client_id', $client->id)->where('status', 'open')->count(),
             ],
         ]);
     }

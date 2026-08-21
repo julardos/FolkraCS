@@ -41,74 +41,37 @@ class ConnectionsController extends Controller
 
     public function waStatus()
     {
-        $client = $this->client();
+        $waha = new \Modules\WhatsApp\Services\WahaClient($this->client());
+        $status = $waha->getSessionStatus();
 
-        if (! $client->wa_base_url || ! $client->wa_session) {
-            return response()->json(['status' => 'NOT_CONFIGURED'], 200);
-        }
+        $httpCode = match ($status['status']) {
+            'ERROR' => $status['http_code'] ?? 503,
+            'AUTH_ERROR' => 403,
+            default => 200,
+        };
 
-        try {
-            $res = Http::withHeaders($this->waHeaders($client))
-                ->timeout(8)
-                ->get("{$client->wa_base_url}/api/sessions/{$client->wa_session}");
-
-            return response()->json($res->json(), $res->status());
-        } catch (\Throwable $e) {
-            Log::warning('WAHA status check failed', ['error' => $e->getMessage()]);
-            return response()->json(['status' => 'ERROR', 'message' => $e->getMessage()], 503);
-        }
+        return response()->json($status, $httpCode);
     }
 
     public function waQr()
     {
-        $client = $this->client();
+        $waha = new \Modules\WhatsApp\Services\WahaClient($this->client());
+        $res = $waha->getQrCode();
 
-        abort_unless($client->wa_base_url && $client->wa_session, 422, 'WhatsApp not configured.');
-
-        try {
-            $res = Http::withHeaders($this->waHeaders($client))
-                ->timeout(10)
-                ->get("{$client->wa_base_url}/api/sessions/{$client->wa_session}/auth/qr");
-
-            if (! $res->successful()) {
-                return response()->json(['error' => 'QR not available'], 422);
-            }
-
-            // WAHA returns { mime: 'image/png', data: 'base64...' }
-            $body = $res->json();
-            return response()->json([
-                'mime' => $body['mime'] ?? 'image/png',
-                'data' => $body['data'] ?? null,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 503);
+        if (isset($res['error'])) {
+            return response()->json($res, 422);
         }
+
+        return response()->json($res, 200);
     }
 
     public function waStart()
     {
-        $client = $this->client();
+        $waha = new \Modules\WhatsApp\Services\WahaClient($this->client());
+        $res = $waha->startSession();
 
-        abort_unless($client->wa_base_url && $client->wa_session, 422, 'WhatsApp not configured.');
-
-        try {
-            $res = Http::withHeaders($this->waHeaders($client))
-                ->timeout(10)
-                ->post("{$client->wa_base_url}/api/sessions/{$client->wa_session}/start");
-
-            return response()->json($res->json(), $res->status());
-        } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 503);
-        }
-    }
-
-    private function waHeaders(Client $client): array
-    {
-        $headers = ['Content-Type' => 'application/json'];
-        if ($client->wa_api_key) {
-            $headers['X-Api-Key'] = $client->wa_api_key;
-        }
-        return $headers;
+        $httpCode = isset($res['http_code']) ? $res['http_code'] : 200;
+        return response()->json($res, $httpCode);
     }
 
     // ── Instagram OAuth ───────────────────────────────────────────────────

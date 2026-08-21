@@ -251,4 +251,37 @@ class WhatsAppWebhookTest extends TestCase
         $this->assertNotEmpty($conversation->summary);
         $this->assertStringContainsString('Ringkasan: Klien menanyakan konsultasi', $conversation->summary);
     }
+
+    public function test_waha_client_session_status_states(): void
+    {
+        $client = \App\Models\Client::create([
+            'name'        => 'Test Client WAHA',
+            'wa_base_url' => 'https://wa-test.domain',
+            'wa_api_key'  => 'key_123',
+            'wa_session'  => 'sess_1',
+            'status'      => 'active',
+        ]);
+
+        $waha = new \Modules\WhatsApp\Services\WahaClient($client);
+
+        Http::fake([
+            'https://wa-test.domain/api/sessions/sess_1' => Http::sequence()
+                ->push(['name' => 'sess_1', 'status' => 'WORKING', 'me' => ['id' => '628123456@c.us']], 200)
+                ->push(['message' => 'Forbidden'], 403)
+                ->push(['message' => 'Session not found'], 404),
+        ]);
+
+        // Case 1: WORKING
+        $status = $waha->getSessionStatus();
+        $this->assertEquals('WORKING', $status['status']);
+        $this->assertEquals('sess_1', $status['session']);
+
+        // Case 2: AUTH_ERROR (403)
+        $status = $waha->getSessionStatus();
+        $this->assertEquals('AUTH_ERROR', $status['status']);
+
+        // Case 3: STOPPED (404)
+        $status = $waha->getSessionStatus();
+        $this->assertEquals('STOPPED', $status['status']);
+    }
 }

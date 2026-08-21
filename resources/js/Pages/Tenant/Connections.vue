@@ -1,6 +1,6 @@
 <script setup>
 import TenantLayout from '@/Layouts/TenantLayout.vue';
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import Card from '@/components/ui/card/Card.vue';
 import CardContent from '@/components/ui/card/CardContent.vue';
@@ -10,7 +10,8 @@ import CardDescription from '@/components/ui/card/CardDescription.vue';
 import CardFooter from '@/components/ui/card/CardFooter.vue';
 import Button from '@/components/ui/button/Button.vue';
 import Badge from '@/components/ui/badge/Badge.vue';
-import { Wifi, Instagram, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle } from 'lucide-vue-next';
+import { Wifi, Instagram, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, ShieldAlert } from 'lucide-vue-next';
+import { useConnectionStore } from '@/stores/useConnectionStore';
 
 const props = defineProps({
   channels:  String,
@@ -18,76 +19,7 @@ const props = defineProps({
   instagram: Object,
 });
 
-// ── WhatsApp state ───────────────────────────────────────────
-const waStatus  = ref('LOADING');  // LOADING | NOT_CONFIGURED | STOPPED | STARTING | SCAN_QR_CODE | WORKING | ERROR
-const qrData    = ref(null);       // base64 PNG
-const waError   = ref(null);
-const qrLoading = ref(false);
-
-let statusPoller = null;
-let qrTimer      = null;
-
-async function fetchWaStatus() {
-  try {
-    const res = await fetch('/connections/wa/status');
-    const json = await res.json();
-    waStatus.value = json.status ?? 'ERROR';
-
-    if (waStatus.value === 'SCAN_QR_CODE') {
-      await fetchQr();
-    } else if (waStatus.value === 'WORKING') {
-      qrData.value = null;
-      clearInterval(qrTimer);
-    }
-  } catch {
-    waStatus.value = 'ERROR';
-  }
-}
-
-async function fetchQr() {
-  qrLoading.value = true;
-  try {
-    const res  = await fetch('/connections/wa/qr');
-    const json = await res.json();
-    if (json.data) qrData.value = `data:${json.mime ?? 'image/png'};base64,${json.data}`;
-  } catch {
-    // QR temporarily unavailable — keep old one
-  } finally {
-    qrLoading.value = false;
-  }
-}
-
-async function startSession() {
-  waError.value  = null;
-  waStatus.value = 'STARTING';
-  try {
-    await fetch('/connections/wa/start', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken() } });
-  } catch (e) {
-    waError.value = e.message;
-  }
-}
-
-function csrfToken() {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-}
-
-const waStatusLabel = computed(() => ({
-  LOADING:       'Checking…',
-  NOT_CONFIGURED:'Not configured',
-  STOPPED:       'Stopped',
-  STARTING:      'Starting…',
-  SCAN_QR_CODE:  'Waiting for QR scan',
-  WORKING:       'Connected',
-  ERROR:         'Error',
-}[waStatus.value] ?? waStatus.value));
-
-const waStatusVariant = computed(() => ({
-  WORKING:       'success',
-  SCAN_QR_CODE:  'warning',
-  STOPPED:       'secondary',
-  NOT_CONFIGURED:'secondary',
-  ERROR:         'destructive',
-}[waStatus.value] ?? 'outline'));
+const connection = useConnectionStore();
 
 // ── Instagram state ──────────────────────────────────────────
 function connectInstagram() {
@@ -102,18 +34,12 @@ function disconnectInstagram() {
 
 // ── Lifecycle ────────────────────────────────────────────────
 onMounted(() => {
-  if (props.wa.configured) {
-    fetchWaStatus();
-    statusPoller = setInterval(fetchWaStatus, 5000);
-    qrTimer      = setInterval(fetchQr, 30000);
-  } else {
-    waStatus.value = 'NOT_CONFIGURED';
-  }
-});
-
-onUnmounted(() => {
-  clearInterval(statusPoller);
-  clearInterval(qrTimer);
+  connection.init({
+    wa: props.wa,
+    instagram: props.instagram,
+    channels: props.channels,
+  });
+  connection.startPolling(5000);
 });
 </script>
 
@@ -136,55 +62,77 @@ onUnmounted(() => {
               </div>
               <div>
                 <CardTitle>WhatsApp</CardTitle>
-                <CardDescription>Scan QR to authenticate your WhatsApp session ({{ wa.session ?? '—' }})</CardDescription>
+                <CardDescription>Scan QR to authenticate your WhatsApp session ({{ connection.waSession ?? wa?.session ?? '—' }})</CardDescription>
               </div>
             </div>
-            <Badge :variant="waStatusVariant">{{ waStatusLabel }}</Badge>
+            <Badge :variant="connection.statusVariant">{{ connection.statusLabel }}</Badge>
           </div>
         </CardHeader>
 
         <CardContent>
           <!-- Not configured by landlord yet -->
-          <div v-if="waStatus === 'NOT_CONFIGURED'" class="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 rounded-md p-3">
+          <div v-if="connection.waStatus === 'NOT_CONFIGURED'" class="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 rounded-md p-3">
             <AlertTriangle class="w-4 h-4 shrink-0" />
             WhatsApp session not configured yet. Contact your admin to set up the WAHA session.
           </div>
 
           <!-- Connected -->
-          <div v-else-if="waStatus === 'WORKING'" class="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-md p-4">
+          <div v-else-if="connection.isOnline" class="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-md p-4">
             <CheckCircle2 class="w-5 h-5 shrink-0" />
             <div>
               <p class="font-medium">WhatsApp is connected and active.</p>
-              <p class="text-xs text-green-600 mt-0.5">The AI is receiving and replying to messages on session <strong>{{ wa.session }}</strong>.</p>
+              <p class="text-xs text-green-600 mt-0.5">The AI is receiving and replying to messages on session <strong>{{ connection.waSession }}</strong>.</p>
             </div>
           </div>
 
           <!-- QR scan needed -->
-          <div v-else-if="waStatus === 'SCAN_QR_CODE'" class="space-y-4">
+          <div v-else-if="connection.isScanning" class="space-y-4">
             <p class="text-sm text-muted-foreground">Open WhatsApp on your phone → Linked Devices → Link a Device, then scan this QR code.</p>
             <div class="flex items-start gap-6">
               <div class="border rounded-xl p-3 bg-white inline-block">
-                <div v-if="qrLoading && !qrData" class="w-48 h-48 flex items-center justify-center">
+                <div v-if="connection.qrLoading && !connection.qrData" class="w-48 h-48 flex items-center justify-center">
                   <Loader2 class="w-8 h-8 animate-spin text-muted-foreground" />
                 </div>
-                <img v-else-if="qrData" :src="qrData" alt="WhatsApp QR Code" class="w-48 h-48 object-contain" />
+                <img v-else-if="connection.qrData" :src="connection.qrData" alt="WhatsApp QR Code" class="w-48 h-48 object-contain" />
                 <div v-else class="w-48 h-48 flex items-center justify-center text-xs text-muted-foreground">No QR available</div>
               </div>
               <div class="text-sm space-y-2 text-muted-foreground pt-2">
-                <p>QR refreshes automatically every 30 seconds.</p>
+                <p>QR refreshes automatically every 20 seconds.</p>
                 <p>Once scanned, this page updates instantly.</p>
-                <Button variant="outline" size="sm" @click="fetchQr" class="gap-1">
-                  <RefreshCw class="w-3.5 h-3.5" /> Refresh QR
+                <Button variant="outline" size="sm" @click="connection.fetchQr" :disabled="connection.qrLoading" class="gap-1">
+                  <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': connection.qrLoading }" /> Refresh QR
                 </Button>
               </div>
             </div>
           </div>
 
-          <!-- Stopped / needs start -->
-          <div v-else-if="waStatus === 'STOPPED' || waStatus === 'ERROR'" class="space-y-3">
+          <!-- Auth Error (API Key permissions mismatch) -->
+          <div v-else-if="connection.isAuthError" class="space-y-3">
+            <div class="flex items-start gap-3 text-sm text-destructive bg-destructive/10 rounded-md p-3">
+              <ShieldAlert class="w-5 h-5 shrink-0 mt-0.5" />
+              <div>
+                <p class="font-medium">Authentication Error (403 Forbidden)</p>
+                <p class="text-xs mt-1">WAHA rejected access to session <strong>{{ connection.waSession }}</strong>. Ensure your WAHA API key has permission for this session.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stopped session -->
+          <div v-else-if="connection.isStopped" class="space-y-3">
             <div class="flex items-center gap-2 text-sm text-muted-foreground bg-muted rounded-md p-3">
-              <XCircle class="w-4 h-4 shrink-0 text-destructive" />
+              <XCircle class="w-4 h-4 shrink-0 text-muted-foreground" />
               Session is stopped. Start it to show the QR code.
+            </div>
+          </div>
+
+          <!-- Connection Error -->
+          <div v-else-if="connection.waStatus === 'ERROR'" class="space-y-3">
+            <div class="flex items-start gap-3 text-sm text-destructive bg-destructive/10 rounded-md p-3">
+              <AlertTriangle class="w-5 h-5 shrink-0 mt-0.5" />
+              <div>
+                <p class="font-medium">WAHA Connection Error</p>
+                <p class="text-xs mt-1">{{ connection.waError || 'Failed to connect to WAHA server.' }}</p>
+              </div>
             </div>
           </div>
 
@@ -194,9 +142,9 @@ onUnmounted(() => {
           </div>
         </CardContent>
 
-        <CardFooter v-if="waStatus === 'STOPPED' || waStatus === 'ERROR'">
-          <Button @click="startSession" :disabled="waStatus === 'STARTING'" class="gap-2">
-            <Loader2 v-if="waStatus === 'STARTING'" class="w-4 h-4 animate-spin" />
+        <CardFooter v-if="connection.isStopped || connection.waStatus === 'ERROR'">
+          <Button @click="connection.startSession" :disabled="connection.isStarting" class="gap-2">
+            <Loader2 v-if="connection.isStarting" class="w-4 h-4 animate-spin" />
             Start Session
           </Button>
         </CardFooter>
