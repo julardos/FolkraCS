@@ -117,19 +117,20 @@ class InstagramWebhookController extends Controller
     private function isValidSignature(Request $request, string $rawBody): bool
     {
         $signature = $request->header('X-Hub-Signature-256');
+        $secret    = config('services.meta.app_secret');
+        $expected  = $secret ? 'sha256=' . hash_hmac('sha256', $rawBody, $secret) : null;
 
-        if (! $signature) {
+        Log::debug('[IG-WEBHOOK] Signature check', [
+            'secret_set'       => ! empty($secret),
+            'secret_last4'     => $secret ? '****' . substr($secret, -4) : 'NOT SET',
+            'received_sig'     => $signature ? substr($signature, 0, 20) . '...' : 'NONE',
+            'expected_sig'     => $expected ? substr($expected, 0, 20) . '...' : 'N/A',
+            'match'            => $expected && $signature && hash_equals($expected, $signature),
+        ]);
+
+        if (! $signature || ! $secret) {
             return false;
         }
-
-        $secret = config('services.meta.app_secret');
-
-        if (! $secret) {
-            Log::error('[IG-WEBHOOK] META_APP_SECRET / META_SECRET not set on this server!');
-            return false;
-        }
-
-        $expected = 'sha256=' . hash_hmac('sha256', $rawBody, $secret);
 
         return hash_equals($expected, $signature);
     }
