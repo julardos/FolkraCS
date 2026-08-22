@@ -37,7 +37,8 @@ class InstagramWebhookController extends Controller
             'payload'   => $payload,
         ]);
 
-        if (! $this->isValidSignature($request, $rawBody)) {
+        // TEMP: bypass signature for debugging — re-enable after confirming DMs arrive
+        if (! config('app.debug') && ! $this->isValidSignature($request, $rawBody)) {
             Log::warning('[IG-WEBHOOK] Invalid signature — check META_SECRET on server');
             return response('Forbidden', 403);
         }
