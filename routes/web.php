@@ -10,7 +10,7 @@ use App\Http\Controllers\Landlord\InstagramCallbackController;
 use App\Http\Controllers\Webhooks\InstagramWebhookController;
 use App\Http\Middleware\EnsureLandlord;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\InstagramTestController;
+
 
 $landlordDomain = env('LANDLORD_DOMAIN', 'folkra.co');
 
@@ -30,8 +30,7 @@ Route::domain($landlordDomain)->group(function () {
 
     Route::get('/privacy', fn () => \Inertia\Inertia::render('Privacy'))->name('privacy');
 
-    Route::get('/instagram/test', [InstagramTestController::class, 'showForm'])->name('instagram.test.form');
-    Route::post('/instagram/test', [InstagramTestController::class, 'runTest'])->name('instagram.test.run');
+
 
     // Auth (guest routes: login, forgot-password, reset-password)
     require __DIR__ . '/auth.php';

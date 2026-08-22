@@ -43,13 +43,6 @@ class ConnectionsController extends Controller
     {
         $client = $this->client();
 
-        Log::info('[DEV] WA status check', [
-            'tenant'     => tenant('id'),
-            'wa_base_url'=> $client->wa_base_url,
-            'wa_session' => $client->wa_session,
-            'api_key'    => $client->wa_api_key ? $client->wa_api_key : 'NOT SET',
-        ]);
-
         $waha = new \Modules\WhatsApp\Services\WahaClient($client);
         $status = $waha->getSessionStatus();
 
