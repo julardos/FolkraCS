@@ -87,12 +87,6 @@ class InstagramCallbackController extends Controller
             $igUsername  = $meRes->json('username');
         }
 
-        Log::info('Instagram connected', [
-            'client'      => $client->id,
-            'ig_user_id'  => $igAccountId,
-            'ig_username' => $igUsername,
-        ]);
-
         $client->update([
             'instagram_access_token'     => $longToken,
             'instagram_account_id'       => $igAccountId,
@@ -100,8 +94,26 @@ class InstagramCallbackController extends Controller
             'instagram_token_expires_at' => now()->addSeconds($expiresIn),
         ]);
 
+        // Subscribe this IG account to receive webhook events.
+        // Dashboard-level webhook setup only registers the URL globally.
+        // This call tells Meta to actually send events for this specific account.
+        $subRes = Http::post("https://graph.instagram.com/v21.0/{$igAccountId}/subscribed_apps", [
+            'subscribed_fields' => 'messages',
+            'access_token'      => $longToken,
+        ]);
+
+        Log::info('Instagram connected + webhook subscribed', [
+            'client'           => $client->id,
+            'ig_user_id'       => $igAccountId,
+            'ig_username'      => $igUsername,
+            'sub_status'       => $subRes->status(),
+            'sub_response'     => $subRes->json(),
+        ]);
+
+        $subOk = $subRes->successful() && ($subRes->json('success') === true);
+
         $message = $igAccountId
-            ? "Instagram @{$igUsername} berhasil terhubung."
+            ? "Instagram @{$igUsername} berhasil terhubung." . ($subOk ? '' : ' (Webhook subscription gagal — coba disconnect & connect ulang.)')
             : 'Token tersimpan, tapi info akun tidak ditemukan. Coba disconnect dan connect ulang.';
 
         return $this->successRedirect($client, $message);
