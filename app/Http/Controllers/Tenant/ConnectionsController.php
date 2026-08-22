@@ -41,7 +41,16 @@ class ConnectionsController extends Controller
 
     public function waStatus()
     {
-        $waha = new \Modules\WhatsApp\Services\WahaClient($this->client());
+        $client = $this->client();
+
+        Log::info('[DEV] WA status check', [
+            'tenant'     => tenant('id'),
+            'wa_base_url'=> $client->wa_base_url,
+            'wa_session' => $client->wa_session,
+            'api_key'    => $client->wa_api_key ? '****' . substr($client->wa_api_key, -4) : 'NOT SET',
+        ]);
+
+        $waha = new \Modules\WhatsApp\Services\WahaClient($client);
         $status = $waha->getSessionStatus();
 
         $httpCode = match ($status['status']) {
@@ -78,13 +87,22 @@ class ConnectionsController extends Controller
 
     public function instagramConnect()
     {
-        // Encode tenant ID in state so the central callback knows which client to update.
-        // encrypt() signs + encrypts, so it can't be tampered with.
+        $appId       = config('services.meta.app_id');
+        $appSecret   = config('services.meta.app_secret');
+        $redirectUri = config('services.meta.redirect_uri');
+
+        Log::info('[DEV] Instagram connect initiated', [
+            'tenant'       => tenant('id'),
+            'app_id'       => $appId ?? 'NOT SET',
+            'app_secret'   => $appSecret ? '****' . substr($appSecret, -4) : 'NOT SET',
+            'redirect_uri' => $redirectUri ?? 'NOT SET',
+        ]);
+
         $state = encrypt(['tenant_id' => tenant('id'), 'ts' => now()->timestamp]);
 
         $params = http_build_query([
-            'client_id'     => config('services.meta.app_id'),
-            'redirect_uri'  => config('services.meta.redirect_uri'),
+            'client_id'     => $appId,
+            'redirect_uri'  => $redirectUri,
             'scope'         => 'instagram_manage_messages,instagram_basic,pages_show_list,pages_messaging',
             'response_type' => 'code',
             'state'         => $state,
