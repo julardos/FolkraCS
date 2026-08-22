@@ -33,7 +33,12 @@ class ProcessInstagramMessageJob implements ShouldQueue
         OutputParser       $parser,
         InstagramClient    $instagram,
     ): void {
-        // Skip if human takeover
+        Log::info('[IG-JOB] Started', [
+            'client' => $this->client->id,
+            'sender' => $this->senderId,
+            'text'   => substr($this->userMessage, 0, 80),
+        ]);
+
         $customer = $this->resolveCustomer();
         if ($customer->is_human_takeover) {
             return;
