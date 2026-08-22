@@ -18,7 +18,10 @@ Route::domain($landlordDomain)->group(function () {
 
     // Instagram webhook — no auth, Meta calls this directly
     Route::get('/webhooks/instagram',  [InstagramWebhookController::class, 'verify'])->name('instagram.webhook.verify');
-    Route::post('/webhooks/instagram', [InstagramWebhookController::class, 'receive'])->name('instagram.webhook.receive')->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+    Route::post('/webhooks/instagram', [InstagramWebhookController::class, 'receive'])->name('instagram.webhook.receive')->withoutMiddleware([
+        \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+        \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class,
+    ]);
 
     // Instagram OAuth callback — central, no auth required (comes from Meta redirect)
     Route::get('/instagram/callback', [InstagramCallbackController::class, '__invoke'])->name('instagram.callback');
