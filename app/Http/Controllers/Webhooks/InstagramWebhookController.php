@@ -45,9 +45,11 @@ class InstagramWebhookController extends Controller
 
         $object = $payload['object'] ?? '';
 
-        // Instagram Business Login sends object = "instagram"
-        if ($object !== 'instagram') {
-            Log::info('[IG-WEBHOOK] Ignored — object type is not instagram', ['object' => $object]);
+        // Instagram Business Login: object = "instagram"
+        // Messenger Platform (older IG Graph API): object = "page"
+        // Accept both to be safe — log what we actually receive
+        if (! in_array($object, ['instagram', 'page', 'instagram_business_account'])) {
+            Log::info('[IG-WEBHOOK] Ignored — unrecognised object type', ['object' => $object]);
             return response('ok', 200);
         }
 
