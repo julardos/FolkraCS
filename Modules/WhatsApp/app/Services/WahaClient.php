@@ -94,7 +94,7 @@ class WahaClient
                 'message'  => $response->json('message') ?? $response->body() ?? 'Failed to get session status',
             ];
         } catch (\Throwable $e) {
-            Log::warning('WahaClient::getSessionStatus failed', ['error' => $e->getMessage()]);
+
             return [
                 'status'   => 'ERROR',
                 'session'  => $sessionName,
@@ -180,15 +180,13 @@ class WahaClient
                 return true;
             }
 
-            Log::error('WahaClient::sendText failed with HTTP error', [
-                'status' => $response->status(),
-                'body'   => $response->body(),
-                'url'    => $url,
-            ]);
+            // Log removed: sendText HTTP error handling
+            // (error details are no longer logged)
+
 
             return false;
         } catch (\Throwable $e) {
-            Log::error('WahaClient::sendText exception', ['error' => $e->getMessage(), 'chatId' => $chatId]);
+            // Log removed: sendText exception handling
             return false;
         }
     }
@@ -208,7 +206,7 @@ class WahaClient
 
             return $response->successful();
         } catch (\Throwable $e) {
-            Log::error('WahaClient::sendFile failed', ['error' => $e->getMessage()]);
+                        // Log removed: sendFile error handling
             return false;
         }
     }

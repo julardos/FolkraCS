@@ -12,7 +12,6 @@ class InstagramCallbackController extends Controller
 {
     public function __invoke(Request $request)
     {
-        // User denied
         if ($request->has('error')) {
             return $this->failRedirect(null, $request->input('error_description', 'Authorization denied.'));
         }
@@ -26,7 +25,6 @@ class InstagramCallbackController extends Controller
             return $this->failRedirect(null, 'Invalid state parameter.');
         }
 
-        // Reject if state is older than 10 minutes
         if (now()->timestamp - $ts > 600) {
             return $this->failRedirect(null, 'OAuth session expired. Please try again.');
         }
@@ -41,72 +39,70 @@ class InstagramCallbackController extends Controller
         $appSecret   = config('services.meta.app_secret');
         $redirectUri = config('services.meta.redirect_uri');
 
-        // 1. Exchange code → short-lived user access token
-        $tokenRes = Http::post('https://graph.facebook.com/v20.0/oauth/access_token', [
+        // Step 1 — Exchange code for short-lived token
+        // Instagram Business Login uses api.instagram.com, NOT graph.facebook.com
+        $tokenRes = Http::asForm()->post('https://api.instagram.com/oauth/access_token', [
             'client_id'     => $appId,
             'client_secret' => $appSecret,
+            'grant_type'    => 'authorization_code',
             'redirect_uri'  => $redirectUri,
             'code'          => $code,
         ]);
 
         if (! $tokenRes->successful()) {
-            Log::error('Instagram token exchange failed', ['client' => $client->id, 'response' => $tokenRes->json()]);
+            Log::error('Instagram token exchange failed', [
+                'client'   => $client->id,
+                'status'   => $tokenRes->status(),
+                'response' => $tokenRes->body(),
+            ]);
             return $this->failRedirect($client->tenant_id, 'Token exchange failed. Please try again.');
         }
 
         $shortLivedToken = $tokenRes->json('access_token');
 
-        // 2. Exchange for long-lived token (~60 days)
-        $longRes   = Http::get('https://graph.facebook.com/v20.0/oauth/access_token', [
-            'grant_type'        => 'fb_exchange_token',
+        // Step 2 — Exchange for long-lived token (~60 days)
+        // Uses graph.instagram.com with ig_exchange_token grant
+        $longRes   = Http::get('https://graph.instagram.com/access_token', [
+            'grant_type'        => 'ig_exchange_token',
             'client_id'         => $appId,
             'client_secret'     => $appSecret,
-            'fb_exchange_token' => $shortLivedToken,
+            'access_token'      => $shortLivedToken,
         ]);
 
         $longToken = $longRes->successful() ? $longRes->json('access_token') : $shortLivedToken;
         $expiresIn = $longRes->successful() ? $longRes->json('expires_in', 5183944) : 5183944;
 
-        // 3. Find Instagram Business account + Page Access Token
-        // We need the PAGE access token (not user token) to send DMs via Graph API.
-        // /me/accounts returns each page's own access_token alongside its IG account.
-        $pagesRes = Http::get('https://graph.facebook.com/v20.0/me/accounts', [
+        // Step 3 — Get Instagram Business account info
+        // With Instagram Business Login, /me returns user_id and username directly
+        $meRes = Http::get('https://graph.instagram.com/me', [
+            'fields'       => 'user_id,username',
             'access_token' => $longToken,
-            'fields'       => 'access_token,instagram_business_account{id,username},name',
         ]);
 
-        $igAccountId   = null;
-        $igUsername    = null;
-        $pageToken     = $longToken; // fallback to user token if no page token found
-        $pageTokenExpiry = $expiresIn;
+        $igAccountId = null;
+        $igUsername  = null;
 
-        if ($pagesRes->successful()) {
-            foreach ($pagesRes->json('data', []) as $page) {
-                $ig = $page['instagram_business_account'] ?? null;
-                if ($ig) {
-                    $igAccountId = $ig['id'];
-                    $igUsername  = $ig['username'] ?? null;
-                    // Page access tokens from /me/accounts are already long-lived
-                    // when the user token is long-lived — they don't expire.
-                    $pageToken       = $page['access_token'] ?? $longToken;
-                    $pageTokenExpiry = isset($page['access_token']) ? 0 : $expiresIn; // 0 = never
-                    break;
-                }
-            }
+        if ($meRes->successful()) {
+            $igAccountId = $meRes->json('user_id');
+            $igUsername  = $meRes->json('username');
         }
 
-        $client->update([
-            'instagram_access_token'     => $pageToken,
-            'instagram_account_id'       => $igAccountId,
-            'instagram_username'         => $igUsername,
-            // Page tokens don't expire when derived from a long-lived user token.
-            // Store null expiry so we don't show a false warning in the UI.
-            'instagram_token_expires_at' => $pageTokenExpiry > 0 ? now()->addSeconds($pageTokenExpiry) : null,
+        Log::info('Instagram connected', [
+            'client'      => $client->id,
+            'ig_user_id'  => $igAccountId,
+            'ig_username' => $igUsername,
         ]);
 
-        $message = $igUsername
-            ? "Instagram connected as @{$igUsername}."
-            : 'Token saved. No Instagram Business account found on your Facebook pages — check your Meta setup.';
+        $client->update([
+            'instagram_access_token'     => $longToken,
+            'instagram_account_id'       => $igAccountId,
+            'instagram_username'         => $igUsername,
+            'instagram_token_expires_at' => now()->addSeconds($expiresIn),
+        ]);
+
+        $message = $igAccountId
+            ? "Instagram @{$igUsername} berhasil terhubung."
+            : 'Token tersimpan, tapi info akun tidak ditemukan. Coba disconnect dan connect ulang.';
 
         return $this->successRedirect($client, $message);
     }

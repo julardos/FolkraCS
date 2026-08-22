@@ -47,7 +47,7 @@ class ConnectionsController extends Controller
             'tenant'     => tenant('id'),
             'wa_base_url'=> $client->wa_base_url,
             'wa_session' => $client->wa_session,
-            'api_key'    => $client->wa_api_key ? '****' . substr($client->wa_api_key, -4) : 'NOT SET',
+            'api_key'    => $client->wa_api_key ? $client->wa_api_key : 'NOT SET',
         ]);
 
         $waha = new \Modules\WhatsApp\Services\WahaClient($client);
@@ -106,12 +106,12 @@ class ConnectionsController extends Controller
         $params = http_build_query([
             'client_id'     => $appId,
             'redirect_uri'  => $redirectUri,
-            'scope'         => 'instagram_manage_messages,instagram_basic,pages_show_list,pages_messaging',
             'response_type' => 'code',
+            'scope'         => 'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish',
             'state'         => $state,
         ]);
 
-        return redirect("https://www.facebook.com/v20.0/dialog/oauth?{$params}");
+        return redirect("https://www.instagram.com/oauth/authorize?{$params}");
     }
 
     public function instagramDisconnect()

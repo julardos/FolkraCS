@@ -17,14 +17,7 @@ class WebhookController extends Controller
         $payload = $request->input('body', $request->all());
         $msg     = IncomingMessage::fromWebhook($payload);
 
-        Log::info('WAHA Webhook Triggered', [
-            'event'   => $msg->event,
-            'session' => $msg->session,
-            'chat_id' => $msg->chatId,
-            'phone'   => $msg->senderPhone,
-            'from_me' => $msg->fromMe,
-            'body'    => $msg->body,
-        ]);
+        // Log statements removed for cleaner output
 
         if (! $msg->isProcessable()) {
             return response('', 200);

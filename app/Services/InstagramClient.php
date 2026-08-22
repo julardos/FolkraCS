@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class InstagramClient
 {
-    private string $baseUrl = 'https://graph.facebook.com/v20.0';
+    private string $baseUrl = 'https://graph.instagram.com/v21.0';
 
     public function sendText(string $recipientId, string $text, Client $client): void
     {
@@ -17,11 +17,12 @@ class InstagramClient
             return;
         }
 
-        $res = Http::post("{$this->baseUrl}/{$client->instagram_account_id}/messages", [
-            'recipient'    => ['id' => $recipientId],
-            'message'      => ['text' => $text],
-            'access_token' => $client->instagram_access_token,
-        ]);
+        // Instagram Business Login: send via graph.instagram.com/{ig-user-id}/messages
+        $res = Http::withToken($client->instagram_access_token)
+            ->post("{$this->baseUrl}/{$client->instagram_account_id}/messages", [
+                'recipient' => ['id' => $recipientId],
+                'message'   => ['text' => $text],
+            ]);
 
         if (! $res->successful()) {
             Log::error('InstagramClient: send failed', [

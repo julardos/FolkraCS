@@ -10,6 +10,7 @@ use App\Http\Controllers\Landlord\InstagramCallbackController;
 use App\Http\Controllers\Webhooks\InstagramWebhookController;
 use App\Http\Middleware\EnsureLandlord;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\InstagramTestController;
 
 $landlordDomain = env('LANDLORD_DOMAIN', 'folkra.co');
 
@@ -22,7 +23,15 @@ Route::domain($landlordDomain)->group(function () {
     // Instagram OAuth callback — central, no auth required (comes from Meta redirect)
     Route::get('/instagram/callback', [InstagramCallbackController::class, '__invoke'])->name('instagram.callback');
 
-    Route::get('/', fn() => auth()->check() ? redirect('/dashboard') : redirect('/login'));
+    Route::get('/', function () {
+        if (auth()->check()) return redirect('/dashboard');
+        return \Inertia\Inertia::render('Welcome');
+    })->name('home');
+
+    Route::get('/privacy', fn () => \Inertia\Inertia::render('Privacy'))->name('privacy');
+
+    Route::get('/instagram/test', [InstagramTestController::class, 'showForm'])->name('instagram.test.form');
+    Route::post('/instagram/test', [InstagramTestController::class, 'runTest'])->name('instagram.test.run');
 
     // Auth (guest routes: login, forgot-password, reset-password)
     require __DIR__ . '/auth.php';
