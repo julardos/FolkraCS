@@ -20,7 +20,7 @@ class InstagramCallbackController extends Controller
         // Decrypt and validate state
         try {
             $state    = decrypt($request->input('state'));
-            $tenantId = $state['tenant_id'] ?? null;
+            $clientId = $state['client_id'] ?? null;
             $ts       = $state['ts'] ?? 0;
         } catch (\Throwable) {
             return $this->failRedirect(null, 'Invalid state parameter.');
@@ -28,10 +28,10 @@ class InstagramCallbackController extends Controller
 
         // Reject if state is older than 10 minutes
         if (now()->timestamp - $ts > 600) {
-            return $this->failRedirect($tenantId, 'OAuth session expired. Please try again.');
+            return $this->failRedirect(null, 'OAuth session expired. Please try again.');
         }
 
-        $client = Client::where('tenant_id', $tenantId)->first();
+        $client = Client::find($clientId);
         if (! $client) {
             return $this->failRedirect(null, 'Client not found.');
         }
@@ -50,8 +50,8 @@ class InstagramCallbackController extends Controller
         ]);
 
         if (! $tokenRes->successful()) {
-            Log::error('Instagram token exchange failed', ['tenant' => $tenantId, 'response' => $tokenRes->json()]);
-            return $this->failRedirect($tenantId, 'Token exchange failed. Please try again.');
+            Log::error('Instagram token exchange failed', ['client' => $client->id, 'response' => $tokenRes->json()]);
+            return $this->failRedirect($client->tenant_id, 'Token exchange failed. Please try again.');
         }
 
         $shortLivedToken = $tokenRes->json('access_token');
@@ -108,7 +108,7 @@ class InstagramCallbackController extends Controller
             ? "Instagram connected as @{$igUsername}."
             : 'Token saved. No Instagram Business account found on your Facebook pages — check your Meta setup.';
 
-        return $this->successRedirect($tenantId, $message);
+        return $this->successRedirect($client, $message);
     }
 
     private function tenantConnectionsUrl(?string $tenantId): ?string
@@ -119,9 +119,9 @@ class InstagramCallbackController extends Controller
         return "https://{$tenantId}.{$suffix}/connections";
     }
 
-    private function successRedirect(string $tenantId, string $message): \Illuminate\Http\RedirectResponse
+    private function successRedirect(Client $client, string $message): \Illuminate\Http\RedirectResponse
     {
-        $url = $this->tenantConnectionsUrl($tenantId) ?? '/';
+        $url = $this->tenantConnectionsUrl($client->tenant_id) ?? '/';
         return redirect($url)->with('success', $message);
     }
 

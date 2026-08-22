@@ -90,15 +90,18 @@ class ConnectionsController extends Controller
         $appId       = config('services.meta.app_id');
         $appSecret   = config('services.meta.app_secret');
         $redirectUri = config('services.meta.redirect_uri');
+        $client      = $this->client();
 
         Log::info('[DEV] Instagram connect initiated', [
-            'tenant'       => tenant('id'),
+            'client_id'    => $client->id,
+            'tenant_id'    => $client->tenant_id,
             'app_id'       => $appId ?? 'NOT SET',
             'app_secret'   => $appSecret ? '****' . substr($appSecret, -4) : 'NOT SET',
             'redirect_uri' => $redirectUri ?? 'NOT SET',
         ]);
 
-        $state = encrypt(['tenant_id' => tenant('id'), 'ts' => now()->timestamp]);
+        // Use client DB id (reliable integer) instead of tenant('id') which can return 0
+        $state = encrypt(['client_id' => $client->id, 'ts' => now()->timestamp]);
 
         $params = http_build_query([
             'client_id'     => $appId,
