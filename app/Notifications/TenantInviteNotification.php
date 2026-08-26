@@ -11,27 +11,38 @@ class TenantInviteNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    protected $token;
+    public function __construct(
+        protected string $token,
+        protected string $tenantDomain,
+        protected string $clientName,
+    ) {}
 
-    public function __construct(string $token)
-    {
-        $this->token = $token;
-    }
-
-    public function via($notifiable)
+    public function via($notifiable): array
     {
         return ['mail'];
     }
 
-    public function toMail($notifiable)
+    public function toMail($notifiable): MailMessage
     {
-        $resetUrl = url(route('password.reset', ['token' => $this->token, 'email' => $notifiable->getEmailForPasswordReset()], false));
+        $resetUrl = url(route('password.reset', [
+            'token' => $this->token,
+            'email' => $notifiable->getEmailForPasswordReset(),
+        ], false));
+
+        $dashboardUrl = 'https://' . $this->tenantDomain;
 
         return (new MailMessage)
-            ->subject('You have been invited — set your password')
-            ->greeting('Welcome!')
-            ->line('An account has been created for you on ' . config('app.name') . '.')
-            ->action('Set your password', $resetUrl)
-            ->line('If you did not expect this email, you can ignore it.');
+            ->subject("Selamat datang di FolkraCS — Yuk aktifkan {$this->clientName}!")
+            ->greeting("Halo, {$notifiable->name}!")
+            ->line("Dashboard FolkraCS untuk **{$this->clientName}** sudah siap digunakan.")
+            ->line("Alamat dashboard Anda: **{$dashboardUrl}**")
+            ->action('Atur Password & Mulai Sekarang', $resetUrl)
+            ->line('Setelah masuk, ikuti 4 langkah ini untuk mengaktifkan asisten AI Anda:')
+            ->line('**1. Hubungkan WhatsApp** → Buka menu Koneksi → scan QR code dengan ponsel Anda')
+            ->line('**2. Isi Knowledge Base** → Masukkan info produk, layanan, harga, dan FAQ bisnis Anda')
+            ->line('**3. Konfigurasi AI** → Atur nama, gaya bahasa, dan instruksi asisten Anda')
+            ->line('**4. Uji coba** → Kirim pesan WhatsApp ke nomor Anda dan lihat AI menjawab otomatis')
+            ->line('Halaman **Mulai** di dalam dashboard akan memandu Anda melalui setiap langkah.')
+            ->line('Butuh bantuan? Balas email ini — kami siap membantu.');
     }
 }

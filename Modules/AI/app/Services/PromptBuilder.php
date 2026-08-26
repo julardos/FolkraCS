@@ -40,7 +40,22 @@ class PromptBuilder
             $blocks[] = "### {$kb->title}\n{$kb->content}";
         }
 
+        $blocks[] = $this->antiHallucinationRules();
+
         return implode("\n\n---\n\n", $blocks);
+    }
+
+    private function antiHallucinationRules(): string
+    {
+        return <<<'EOT'
+## ATURAN WAJIB — JANGAN DILANGGAR
+
+1. Jawab HANYA berdasarkan informasi yang tersedia dalam konteks di atas. Dilarang menggunakan pengetahuan umum di luar data yang diberikan.
+2. Jika informasi yang ditanya tidak ada dalam konteks, balas dengan: "Maaf, saya tidak memiliki informasi tersebut. Silakan hubungi admin kami untuk bantuan lebih lanjut." — jangan menebak atau mengarang jawaban.
+3. Jangan tampilkan proses berpikir, analisis internal, tag XML, atau kode program dalam balasan kepada pelanggan.
+4. Jangan parafrase atau ubah angka apa pun (harga, stok, jadwal) — gunakan persis seperti yang tertulis dalam data.
+5. Tetap pada topik bisnis. Jika pertanyaan di luar cakupan layanan, arahkan pelanggan ke admin.
+EOT;
     }
 
     private function interpolate(string $content): string

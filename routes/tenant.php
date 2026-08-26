@@ -10,6 +10,7 @@ use App\Http\Controllers\Tenant\ConversationController;
 use App\Http\Controllers\Tenant\EscalationController;
 use App\Http\Controllers\Tenant\KnowledgeBaseController;
 use App\Http\Controllers\Tenant\LiveAgentController;
+use App\Http\Controllers\Tenant\OnboardingController;
 use App\Http\Controllers\Tenant\UserController;
 use App\Http\Middleware\EnsureTenantAdmin;
 use App\Http\Middleware\LogTenantInit;
@@ -44,6 +45,11 @@ Route::middleware([
         Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('tenant.conversations.show');
         Route::post('/customers/{customer}/takeover', [LiveAgentController::class, 'enable'])->name('tenant.takeover.enable');
         Route::delete('/customers/{customer}/takeover', [LiveAgentController::class, 'disable'])->name('tenant.takeover.disable');
+
+        // Onboarding (admin only)
+        Route::middleware([EnsureTenantAdmin::class])->group(function () {
+            Route::get('/onboarding', [OnboardingController::class, 'index'])->name('tenant.onboarding');
+        });
 
         // Connections — WA QR proxy + Instagram OAuth (admin only)
         Route::middleware([EnsureTenantAdmin::class])->group(function () {

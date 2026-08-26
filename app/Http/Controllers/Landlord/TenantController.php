@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use App\Notifications\TenantInviteNotification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -65,7 +66,10 @@ class TenantController extends Controller
             'admin_password'     => 'nullable|string|min:8',
         ]);
 
-        DB::transaction(function () use ($data) {
+        $inviteUser   = null;
+        $tenantDomain = null;
+
+        DB::transaction(function () use ($data, &$inviteUser, &$tenantDomain) {
             $tenantId = $data['slug'];
 
             // 1. Create stancl tenant
@@ -74,7 +78,6 @@ class TenantController extends Controller
             // 2. Create domain(s)
             $suffix = env('TENANT_DOMAIN_SUFFIX', 'folkra-cs.test');
             Domain::create(['domain' => "{$tenantId}.{$suffix}", 'tenant_id' => $tenantId]);
-            // Also register .localhost for local dev
             if ($suffix !== 'localhost') {
                 Domain::create(['domain' => "{$tenantId}.localhost", 'tenant_id' => $tenantId]);
             }
@@ -97,7 +100,7 @@ class TenantController extends Controller
 
             // 4. Create admin user for this tenant
             $tempPassword = $data['admin_password'] ?? Str::random(12);
-            $user = User::create([
+            $inviteUser   = User::create([
                 'name'      => $data['admin_name'],
                 'email'     => $data['admin_email'],
                 'password'  => Hash::make($tempPassword),
@@ -106,9 +109,15 @@ class TenantController extends Controller
                 'client_id' => $client->id,
             ]);
 
-            // 5. Try to send password reset link; if email fails, landlord can see temp password
-            Password::sendResetLink(['email' => $user->email]);
+            $tenantDomain = "{$tenantId}.{$suffix}";
         });
+
+        // 5. Send onboarding invite outside the transaction so email failure
+        //    never rolls back the client creation.
+        if ($inviteUser) {
+            $token = Password::createToken($inviteUser);
+            $inviteUser->notify(new TenantInviteNotification($token, $tenantDomain, $data['name']));
+        }
 
         return back()->with('success', 'Client created successfully.');
     }

@@ -8,6 +8,8 @@ class OutputParser
 {
     public function parse(string $output, string $phone, string $phoneLid, ?string $pushName): ParsedOutput
     {
+        $output = $this->stripThinkingAndCode($output);
+
         $hasBooking = str_contains($output, '%%BOOKING_CONFIRMED%%') && str_contains($output, '%%END_BOOKING%%');
         $hasKendala = str_contains($output, '%%KENDALA_DETECTED%%') && str_contains($output, '%%END_KENDALA%%');
 
@@ -29,6 +31,23 @@ class OutputParser
         }
 
         return new ParsedOutput(humanMessage: $output);
+    }
+
+    private function stripThinkingAndCode(string $output): string
+    {
+        // Remove reasoning/thinking blocks exposed by some models (DeepSeek R1, QwQ, etc.)
+        $output = preg_replace('/<think>.*?<\/think>/si', '', $output);
+        $output = preg_replace('/<thinking>.*?<\/thinking>/si', '', $output);
+        $output = preg_replace('/<reflection>.*?<\/reflection>/si', '', $output);
+        $output = preg_replace('/<reasoning>.*?<\/reasoning>/si', '', $output);
+
+        // Remove fenced code blocks (```lang\n...\n```)
+        $output = preg_replace('/```[\s\S]*?```/m', '', $output);
+
+        // Remove leftover XML-like tags that should never reach the customer
+        $output = preg_replace('/<[a-z_]+>[\s\S]*?<\/[a-z_]+>/si', '', $output);
+
+        return trim($output);
     }
 
     private function extractBlock(string $text, string $open, string $close): string

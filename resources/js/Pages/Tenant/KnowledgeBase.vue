@@ -12,9 +12,22 @@ import Input from '@/components/ui/input/Input.vue';
 import Label from '@/components/ui/label/Label.vue';
 import Textarea from '@/components/ui/textarea/Textarea.vue';
 import Badge from '@/components/ui/badge/Badge.vue';
-import { Plus, Pencil, Trash2, Database, Upload, FileText, File } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { Plus, Pencil, Trash2, Database, Upload, FileText, File, Search } from 'lucide-vue-next';
 
 const props = defineProps({ entries: Array });
+
+const searchQuery = ref('');
+
+const filteredEntries = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return props.entries;
+  return props.entries.filter(e =>
+    e.title?.toLowerCase().includes(q) ||
+    e.content?.toLowerCase().includes(q) ||
+    e.file_name?.toLowerCase().includes(q)
+  );
+});
 
 const showNew = ref(false);
 const addMode = ref('text'); // 'text' | 'document'
@@ -91,6 +104,12 @@ function cancelNew() {
       <Button @click="showNew = !showNew">
         <Plus class="w-4 h-4" /> Add Entry
       </Button>
+    </div>
+
+    <!-- Search bar -->
+    <div class="relative mb-6">
+      <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+      <Input v-model="searchQuery" placeholder="Search by title or content…" class="pl-9" />
     </div>
 
     <!-- New entry form -->
@@ -175,15 +194,15 @@ function cancelNew() {
     </Card>
 
     <!-- Empty state -->
-    <div v-if="!entries.length && !showNew" class="text-center py-20">
+    <div v-if="!filteredEntries.length && !showNew" class="text-center py-20">
       <Database class="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-      <p class="text-muted-foreground">No knowledge base entries yet.</p>
-      <p class="text-sm text-muted-foreground mt-1">Add your services, pricing, FAQs — or upload a document.</p>
+      <p class="text-muted-foreground">{{ searchQuery ? 'No entries match your search.' : 'No knowledge base entries yet.' }}</p>
+      <p v-if="!searchQuery" class="text-sm text-muted-foreground mt-1">Add your services, pricing, FAQs — or upload a document.</p>
     </div>
 
     <!-- Entries -->
     <div class="space-y-3">
-      <Card v-for="entry in entries" :key="entry.id">
+      <Card v-for="entry in filteredEntries" :key="entry.id">
         <template v-if="editingId !== entry.id">
           <CardHeader class="pb-3">
             <div class="flex items-center justify-between">

@@ -32,8 +32,9 @@ class OpenRouterClient
     public function chat(string $systemPrompt, array $messages): string
     {
         $payload = [
-            'model'    => $this->model,
-            'messages' => array_merge(
+            'model'       => $this->model,
+            'temperature' => 0.2,
+            'messages'    => array_merge(
                 [['role' => 'system', 'content' => $systemPrompt]],
                 $messages
             ),

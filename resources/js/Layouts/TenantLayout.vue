@@ -2,7 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import {
-  LayoutDashboard, Database, Bot, AlertTriangle, MessageSquare, LogOut, Users, Plug
+  LayoutDashboard, Database, Bot, AlertTriangle, MessageSquare, LogOut, Users, Plug, Rocket
 } from 'lucide-vue-next';
 
 const page = usePage();
@@ -11,6 +11,7 @@ const isAdmin = computed(() => user.value?.role === 'admin');
 
 const nav = computed(() => [
   { label: 'Dashboard',      href: '/dashboard',      icon: LayoutDashboard, adminOnly: false },
+  { label: 'Mulai',          href: '/onboarding',     icon: Rocket,          adminOnly: true  },
   { label: 'Conversations',  href: '/conversations',  icon: MessageSquare,   adminOnly: false },
   { label: 'Connections',    href: '/connections',    icon: Plug,            adminOnly: true },
   { label: 'AI Settings',    href: '/ai-settings',    icon: Bot,             adminOnly: true },
