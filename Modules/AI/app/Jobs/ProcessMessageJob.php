@@ -2,6 +2,7 @@
 
 namespace Modules\AI\Jobs;
 
+use App\Models\Client;
 use App\Models\Conversation;
 use App\Models\Customer;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -32,12 +33,16 @@ class ProcessMessageJob implements ShouldQueue
     public function handle(
         PromptBuilder $promptBuilder,
         ConversationMemory $memory,
-        OpenRouterClient $ai,
         OutputParser $parser,
-        WahaClient $waha,
         TicketService $tickets,
         EscalationNotifier $notifier,
     ): void {
+        // Resolve the client for this session so AI + WA use the correct
+        // API keys and config — not Client::first() which could be another tenant.
+        $client = Client::where('wa_session', $this->session)->first();
+        $ai     = new OpenRouterClient($client);
+        $waha   = new WahaClient($client);
+
         // Get or create active conversation
         $conversation = $this->customer->activeConversation ?? Conversation::create([
             'customer_id' => $this->customer->id,
@@ -49,7 +54,7 @@ class ProcessMessageJob implements ShouldQueue
         $memory->append($conversation, 'user', $this->userMessage);
 
         // Build prompt and history
-        $systemPrompt = $promptBuilder->build();
+        $systemPrompt = $promptBuilder->build($client);
         $history      = $memory->load($conversation);
 
         // Call AI
