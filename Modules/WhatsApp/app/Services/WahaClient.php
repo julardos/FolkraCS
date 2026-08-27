@@ -115,7 +115,7 @@ class WahaClient
             $response = Http::withHeaders($this->headers())
                 ->withoutVerifying()
                 ->timeout(10)
-                ->get("{$this->baseUrl}/api/sessions/{$sessionName}/auth/qr");
+                ->get("{$this->baseUrl}/api/{$sessionName}/auth/qr");
 
             if ($response->successful()) {
                 $body = $response->json();
@@ -153,6 +153,34 @@ class WahaClient
                 'status'   => 'ERROR',
                 'http_code'=> $response->status(),
                 'message'  => $response->json('message') ?? 'Failed to start session',
+            ];
+        } catch (\Throwable $e) {
+            return ['status' => 'ERROR', 'message' => $e->getMessage()];
+        }
+    }
+
+    public function restartSession(?string $session = null): array
+    {
+        if (! $this->isConfigured()) {
+            return ['status' => 'NOT_CONFIGURED', 'message' => 'WhatsApp not configured'];
+        }
+
+        $sessionName = ! empty($session) ? $session : $this->session;
+
+        try {
+            $response = Http::withHeaders($this->headers())
+                ->withoutVerifying()
+                ->timeout(12)
+                ->post("{$this->baseUrl}/api/sessions/{$sessionName}/restart");
+
+            if ($response->successful()) {
+                return $response->json() ?: ['status' => 'RESTARTING'];
+            }
+
+            return [
+                'status'    => 'ERROR',
+                'http_code' => $response->status(),
+                'message'   => $response->json('message') ?? 'Failed to restart session',
             ];
         } catch (\Throwable $e) {
             return ['status' => 'ERROR', 'message' => $e->getMessage()];

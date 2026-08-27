@@ -10,7 +10,7 @@ import CardDescription from '@/components/ui/card/CardDescription.vue';
 import CardFooter from '@/components/ui/card/CardFooter.vue';
 import Button from '@/components/ui/button/Button.vue';
 import Badge from '@/components/ui/badge/Badge.vue';
-import { Wifi, Instagram, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, ShieldAlert } from 'lucide-vue-next';
+import { Wifi, Instagram, RefreshCw, CheckCircle2, XCircle, Loader2, AlertTriangle, ShieldAlert, RotateCw } from 'lucide-vue-next';
 import { useConnectionStore } from '@/stores/useConnectionStore';
 
 const props = defineProps({
@@ -137,15 +137,16 @@ onUnmounted(() => connection.stopPolling());
             </div>
           </div>
 
-          <!-- General error — WAHA unreachable, client can retry -->
-          <div v-else-if="connection.waStatus === 'ERROR'"
+          <!-- Failed / Error — can restart -->
+          <div v-else-if="connection.isFailed"
                class="flex items-start gap-3 text-sm bg-destructive/5 border border-destructive/20 rounded-md p-4">
             <AlertTriangle class="w-5 h-5 shrink-0 mt-0.5 text-destructive" />
             <div>
-              <p class="font-medium text-destructive">WhatsApp is temporarily unavailable</p>
+              <p class="font-medium text-destructive">
+                {{ connection.waStatus === 'FAILED' ? 'Sesi WhatsApp gagal' : 'WhatsApp tidak dapat dijangkau' }}
+              </p>
               <p class="text-xs text-muted-foreground mt-1">
-                We're having trouble reaching your WhatsApp connection. Try refreshing the page in a minute.
-                If this keeps happening, please contact support.
+                {{ connection.statusDescription }}
               </p>
             </div>
           </div>
@@ -157,11 +158,17 @@ onUnmounted(() => connection.stopPolling());
 
         </CardContent>
 
-        <!-- Start button only when session is stopped (not on ERROR — restarting won't help) -->
-        <CardFooter v-if="connection.isStopped">
-          <Button @click="connection.startSession" :disabled="connection.isStarting" class="gap-2">
+        <CardFooter v-if="connection.isStopped || connection.isFailed" class="gap-2">
+          <Button v-if="connection.isStopped"
+                  @click="connection.startSession" :disabled="connection.isStarting" class="gap-2">
             <Loader2 v-if="connection.isStarting" class="w-4 h-4 animate-spin" />
-            {{ connection.isStarting ? 'Starting…' : 'Start Session' }}
+            {{ connection.isStarting ? 'Memulai…' : 'Mulai Sesi' }}
+          </Button>
+          <Button v-if="connection.isFailed"
+                  @click="connection.restartSession" :disabled="connection.isRestarting" class="gap-2">
+            <Loader2 v-if="connection.isRestarting" class="w-4 h-4 animate-spin" />
+            <RotateCw v-else class="w-4 h-4" />
+            {{ connection.isRestarting ? 'Memulai ulang…' : 'Restart Sesi' }}
           </Button>
         </CardFooter>
       </Card>

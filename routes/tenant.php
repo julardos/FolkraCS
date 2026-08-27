@@ -57,6 +57,7 @@ Route::middleware([
             Route::get('/connections/wa/status', [ConnectionsController::class, 'waStatus'])->name('tenant.connections.wa-status');
             Route::get('/connections/wa/qr', [ConnectionsController::class, 'waQr'])->name('tenant.connections.wa-qr');
             Route::post('/connections/wa/start', [ConnectionsController::class, 'waStart'])->name('tenant.connections.wa-start');
+            Route::post('/connections/wa/restart', [ConnectionsController::class, 'waRestart'])->name('tenant.connections.wa-restart');
             Route::get('/connections/instagram', [ConnectionsController::class, 'instagramConnect'])->name('tenant.connections.instagram');
             Route::delete('/connections/instagram', [ConnectionsController::class, 'instagramDisconnect'])->name('tenant.connections.instagram-disconnect');
         });

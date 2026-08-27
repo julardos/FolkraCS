@@ -98,6 +98,19 @@ class ConnectionsController extends Controller
         return response()->json($res, $httpCode);
     }
 
+    public function waRestart()
+    {
+        $client = $this->client();
+
+        if (!$this->waConfigured($client)) {
+            return response()->json(['status' => 'NOT_CONFIGURED'], 200);
+        }
+
+        $res = (new \Modules\WhatsApp\Services\WahaClient($client))->restartSession();
+
+        return response()->json($res, 200);
+    }
+
     // ── Instagram OAuth ───────────────────────────────────────────────────
 
     public function instagramConnect()

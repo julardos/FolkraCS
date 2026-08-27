@@ -11,6 +11,7 @@ export const useConnectionStore = defineStore('connection', () => {
   const qrData       = ref(null); // base64 data URL
   const qrLoading    = ref(false);
   const isStarting   = ref(false);
+  const isRestarting = ref(false);
 
   const instagram    = ref({
     connected: false,
@@ -24,10 +25,11 @@ export const useConnectionStore = defineStore('connection', () => {
   let qrTimer      = null;
 
   // ── Getters ────────────────────────────────────────────────
-  const isOnline = computed(() => waStatus.value === 'WORKING');
-  const isScanning = computed(() => waStatus.value === 'SCAN_QR_CODE');
-  const isStopped = computed(() => waStatus.value === 'STOPPED');
+  const isOnline    = computed(() => waStatus.value === 'WORKING');
+  const isScanning  = computed(() => waStatus.value === 'SCAN_QR_CODE');
+  const isStopped   = computed(() => waStatus.value === 'STOPPED');
   const isAuthError = computed(() => waStatus.value === 'AUTH_ERROR');
+  const isFailed    = computed(() => waStatus.value === 'FAILED' || waStatus.value === 'ERROR');
 
   const statusLabel = computed(() => {
     switch (waStatus.value) {
@@ -37,6 +39,7 @@ export const useConnectionStore = defineStore('connection', () => {
       case 'STOPPED':        return 'Stopped';
       case 'NOT_CONFIGURED': return 'Not Configured';
       case 'AUTH_ERROR':     return 'Auth Error';
+      case 'FAILED':         return 'Session Failed';
       case 'ERROR':          return 'Connection Error';
       case 'LOADING':        return 'Checking…';
       default:               return waStatus.value;
@@ -51,6 +54,7 @@ export const useConnectionStore = defineStore('connection', () => {
       case 'STOPPED':        return 'secondary';
       case 'NOT_CONFIGURED': return 'secondary';
       case 'AUTH_ERROR':     return 'destructive';
+      case 'FAILED':         return 'destructive';
       case 'ERROR':          return 'destructive';
       default:               return 'outline';
     }
@@ -70,6 +74,8 @@ export const useConnectionStore = defineStore('connection', () => {
         return 'WhatsApp session not configured yet.';
       case 'AUTH_ERROR':
         return waError.value || 'Invalid WAHA API key or session permission.';
+      case 'FAILED':
+        return waError.value || 'Session failed. Click Restart to try again.';
       case 'ERROR':
         return waError.value || 'Cannot reach WAHA server.';
       default:
@@ -187,6 +193,28 @@ export const useConnectionStore = defineStore('connection', () => {
     }
   }
 
+  async function restartSession() {
+    isRestarting.value = true;
+    waError.value = null;
+
+    try {
+      await fetch('/connections/wa/restart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken(),
+          'Accept': 'application/json'
+        }
+      });
+      // Give WAHA a moment then re-poll — it will surface SCAN_QR_CODE once ready
+      setTimeout(fetchWaStatus, 2000);
+    } catch (e) {
+      waError.value = e.message || 'Failed to restart session';
+    } finally {
+      isRestarting.value = false;
+    }
+  }
+
   function startPolling(intervalMs = 6000) {
     if (!statusPoller) {
       fetchWaStatus();
@@ -222,6 +250,7 @@ export const useConnectionStore = defineStore('connection', () => {
     isScanning,
     isStopped,
     isAuthError,
+    isFailed,
     statusLabel,
     statusVariant,
     statusDescription,
@@ -230,7 +259,9 @@ export const useConnectionStore = defineStore('connection', () => {
     fetchWaStatus,
     fetchQr,
     startSession,
+    restartSession,
     startPolling,
     stopPolling,
+    isRestarting,
   };
 });
