@@ -53,7 +53,7 @@ class TenantController extends Controller
             'channels'           => 'required|in:whatsapp,whatsapp_instagram',
             'name'               => 'required|string|max:255',
             'business_type'      => 'nullable|string|max:255',
-            'slug'               => 'required|string|alpha_dash|unique:clients,slug',
+            'slug'               => 'required|string|alpha_dash|unique:clients,slug|unique:tenants,id',
             'wa_base_url'        => 'nullable|url',
             'wa_api_key'         => 'nullable|string',
             'wa_session'         => 'nullable|string',
@@ -109,7 +109,10 @@ class TenantController extends Controller
                 'client_id' => $client->id,
             ]);
 
-            $tenantDomain = "{$tenantId}.{$suffix}";
+            // Use the actual stored domain rather than reconstructing from env
+            $tenantDomain = Domain::where('tenant_id', $tenantId)
+                ->where('domain', 'not like', '%.localhost')
+                ->value('domain') ?? "{$tenantId}.{$suffix}";
         });
 
         // 5. Send onboarding invite outside the transaction so email failure
