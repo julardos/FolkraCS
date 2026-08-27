@@ -112,16 +112,17 @@ class WahaClient
         $sessionName = ! empty($session) ? $session : $this->session;
 
         try {
+            // ?format=image returns binary PNG directly — more reliable than
+            // the JSON endpoint whose `data` field varies by WAHA version.
             $response = Http::withHeaders($this->headers())
                 ->withoutVerifying()
                 ->timeout(10)
-                ->get("{$this->baseUrl}/api/{$sessionName}/auth/qr");
+                ->get("{$this->baseUrl}/api/{$sessionName}/auth/qr", ['format' => 'image']);
 
             if ($response->successful()) {
-                $body = $response->json();
                 return [
-                    'mime' => $body['mime'] ?? 'image/png',
-                    'data' => $body['data'] ?? null,
+                    'mime' => 'image/png',
+                    'data' => base64_encode($response->body()),
                 ];
             }
 
