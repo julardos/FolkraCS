@@ -3,6 +3,7 @@
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Landlord\ConversationController as LandlordConversationController;
+use App\Http\Controllers\Landlord\GlobalSettingsController;
 use App\Http\Controllers\Landlord\LiveAgentController as LandlordLiveAgentController;
 use App\Http\Controllers\Landlord\TenantController;
 use App\Http\Controllers\ProfileController;
@@ -59,6 +60,9 @@ Route::domain($landlordDomain)->group(function () {
 
         // Send password reset to a tenant user (from landlord dashboard)
         Route::post('/tenants/users/{user}/reset-password', [TenantController::class, 'resetUserPassword'])->name('landlord.reset-user-password');
+
+        Route::get('/settings', [GlobalSettingsController::class, 'index'])->name('landlord.settings');
+        Route::put('/settings', [GlobalSettingsController::class, 'update'])->name('landlord.settings.update');
 
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

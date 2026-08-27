@@ -5,14 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
+use Modules\AI\Services\OpenRouterClient;
 
 class ClientController extends Controller
 {
     public function index()
     {
+        $models = Cache::remember('openrouter_models', 3600, fn() =>
+            (new OpenRouterClient())->getModels()
+        );
+
         return Inertia::render('Landlord/Clients/Index', [
             'tenantSuffix' => env('TENANT_DOMAIN_SUFFIX', 'folkra.co'),
+            'models'       => $models,
             'clients' => Client::latest()->get()->map(fn($c) => [
                 'id'              => $c->id,
                 'name'            => $c->name,

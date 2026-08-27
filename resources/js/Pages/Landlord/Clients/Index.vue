@@ -16,7 +16,7 @@ import Badge from '@/components/ui/badge/Badge.vue';
 import Textarea from '@/components/ui/textarea/Textarea.vue';
 import Separator from '@/components/ui/separator/Separator.vue';
 
-const props = defineProps({ clients: Array, landlordDomain: String });
+const props = defineProps({ clients: Array, landlordDomain: String, models: Array });
 
 // ── New client form ──────────────────────────────────────────
 const showNewForm = ref(false);
@@ -123,11 +123,7 @@ function destroy(client) {
 
 const statusVariant = (s) => ({ active: 'success', inactive: 'secondary', suspended: 'destructive' }[s] ?? 'outline');
 
-const models = [
-  'openai/gpt-4o-mini', 'openai/gpt-4o', 'openai/gpt-5.6-luna-pro',
-  'anthropic/claude-3-haiku', 'anthropic/claude-sonnet-4-5',
-  'google/gemini-flash-1.5', 'meta-llama/llama-3.1-8b-instruct',
-];
+// models come from server (OpenRouter API, cached 1h)
 
 // expanded instruction panels
 const expandedInstruction = ref(null);
@@ -256,7 +252,7 @@ const expandedInstruction = ref(null);
                 v-model="form.openrouter_model"
                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <option v-for="m in models" :key="m" :value="m">{{ m }}</option>
+                <option v-for="m in models" :key="m.id" :value="m.id">{{ m.name }} ({{ m.id }})</option>
               </select>
             </div>
           </div>
@@ -468,7 +464,7 @@ const expandedInstruction = ref(null);
               <div class="space-y-1.5">
                 <Label>Model</Label>
                 <select v-model="editForm.openrouter_model" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <option v-for="m in models" :key="m" :value="m">{{ m }}</option>
+                  <option v-for="m in models" :key="m.id" :value="m.id">{{ m.name }} ({{ m.id }})</option>
                 </select>
               </div>
             </div>

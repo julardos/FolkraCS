@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Notifications\TenantInviteNotification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Modules\AI\Services\OpenRouterClient;
 use Stancl\Tenancy\Database\Models\Domain;
 use Stancl\Tenancy\Database\Models\Tenant;
 
@@ -41,9 +43,14 @@ class TenantController extends Controller
             'created_at'       => $c->created_at->format('d M Y'),
         ]);
 
+        $models = Cache::remember('openrouter_models', 3600, fn() =>
+            (new OpenRouterClient())->getModels()
+        );
+
         return Inertia::render('Landlord/Clients/Index', [
-            'clients' => $clients,
-            'landlordDomain' => config('tenancy.central_domains')[3] ?? 'landlord.localhost',
+            'clients'       => $clients,
+            'landlordDomain'=> config('tenancy.central_domains')[3] ?? 'landlord.localhost',
+            'models'        => $models,
         ]);
     }
 

@@ -1,15 +1,16 @@
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { LayoutDashboard, Users, MessageSquare, Bot, LogOut } from 'lucide-vue-next';
+import { LayoutDashboard, Users, MessageSquare, Bot, LogOut, Settings } from 'lucide-vue-next';
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
 
 const nav = [
-  { label: 'Dashboard',      href: '/dashboard',     icon: LayoutDashboard },
-  { label: 'Clients',        href: '/clients',        icon: Users },
-  { label: 'Conversations',  href: '/conversations',  icon: MessageSquare },
+  { label: 'Dashboard',     href: '/dashboard',     icon: LayoutDashboard },
+  { label: 'Clients',       href: '/clients',        icon: Users },
+  { label: 'Conversations', href: '/conversations',  icon: MessageSquare },
+  { label: 'Settings',      href: '/settings',       icon: Settings },
 ];
 </script>
 
