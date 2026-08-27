@@ -127,18 +127,28 @@ onUnmounted(() => connection.stopPolling());
             </div>
           </div>
 
+          <!-- Starting -->
+          <div v-else-if="connection.waStatus === 'STARTING'"
+               class="flex items-center gap-3 text-sm text-muted-foreground bg-muted border border-border rounded-md p-4">
+            <Loader2 class="w-4 h-4 animate-spin shrink-0" />
+            <div>
+              <p class="font-medium">Memulai sesi WhatsApp…</p>
+              <p class="text-xs mt-0.5">Harap tunggu, QR code akan muncul sebentar lagi.</p>
+            </div>
+          </div>
+
           <!-- Stopped -->
-          <div v-else-if="connection.isStopped"
+          <div v-else-if="connection.waStatus === 'STOPPED'"
                class="flex items-center gap-3 text-sm text-muted-foreground bg-muted border border-border rounded-md p-4">
             <XCircle class="w-4 h-4 shrink-0" />
             <div>
-              <p class="font-medium">WhatsApp session is offline</p>
-              <p class="text-xs mt-0.5">Click <strong>Start Session</strong> below — a QR code will appear for you to scan.</p>
+              <p class="font-medium">Sesi WhatsApp tidak aktif</p>
+              <p class="text-xs mt-0.5">Klik <strong>Mulai Sesi</strong> di bawah — QR code akan muncul untuk di-scan.</p>
             </div>
           </div>
 
           <!-- Failed / Error — can restart -->
-          <div v-else-if="connection.isFailed"
+          <div v-else-if="connection.waStatus === 'FAILED' || connection.waStatus === 'ERROR'"
                class="flex items-start gap-3 text-sm bg-destructive/5 border border-destructive/20 rounded-md p-4">
             <AlertTriangle class="w-5 h-5 shrink-0 mt-0.5 text-destructive" />
             <div>
@@ -146,25 +156,25 @@ onUnmounted(() => connection.stopPolling());
                 {{ connection.waStatus === 'FAILED' ? 'Sesi WhatsApp gagal' : 'WhatsApp tidak dapat dijangkau' }}
               </p>
               <p class="text-xs text-muted-foreground mt-1">
-                {{ connection.statusDescription }}
+                Klik <strong>Restart Sesi</strong> di bawah untuk mencoba menghubungkan kembali.
               </p>
             </div>
           </div>
 
-          <!-- Loading -->
+          <!-- Loading / unknown -->
           <div v-else class="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 class="w-4 h-4 animate-spin" /> Checking connection…
+            <Loader2 class="w-4 h-4 animate-spin" /> Memeriksa koneksi…
           </div>
 
         </CardContent>
 
-        <CardFooter v-if="connection.isStopped || connection.isFailed" class="gap-2">
-          <Button v-if="connection.isStopped"
+        <CardFooter v-if="['STOPPED','FAILED','ERROR'].includes(connection.waStatus)" class="gap-2">
+          <Button v-if="connection.waStatus === 'STOPPED'"
                   @click="connection.startSession" :disabled="connection.isStarting" class="gap-2">
             <Loader2 v-if="connection.isStarting" class="w-4 h-4 animate-spin" />
             {{ connection.isStarting ? 'Memulai…' : 'Mulai Sesi' }}
           </Button>
-          <Button v-if="connection.isFailed"
+          <Button v-if="connection.waStatus === 'FAILED' || connection.waStatus === 'ERROR'"
                   @click="connection.restartSession" :disabled="connection.isRestarting" class="gap-2">
             <Loader2 v-if="connection.isRestarting" class="w-4 h-4 animate-spin" />
             <RotateCw v-else class="w-4 h-4" />
