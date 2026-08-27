@@ -34,7 +34,7 @@ class TenantController extends Controller
             'masked_ai_key'    => $c->masked_ai_key,
             'domain'           => $c->tenant_id
                 ? optional(Domain::where('tenant_id', $c->tenant_id)
-                    ->where('domain', 'like', '%.'.env('TENANT_DOMAIN_SUFFIX','folkra-cs.test'))
+                    ->where('domain', 'like', '%.'.self::domainSuffix())
                     ->first() ?? Domain::where('tenant_id', $c->tenant_id)->first())->domain
                 : null,
             'user_count'       => User::where('tenant_id', $c->tenant_id)->count(),
@@ -76,7 +76,7 @@ class TenantController extends Controller
             Tenant::create(['id' => $tenantId]);
 
             // 2. Create domain(s)
-            $suffix = env('TENANT_DOMAIN_SUFFIX', 'folkra-cs.test');
+            $suffix = self::domainSuffix();
             Domain::create(['domain' => "{$tenantId}.{$suffix}", 'tenant_id' => $tenantId]);
             if ($suffix !== 'localhost') {
                 Domain::create(['domain' => "{$tenantId}.localhost", 'tenant_id' => $tenantId]);
@@ -137,6 +137,15 @@ class TenantController extends Controller
         }
 
         return back()->withErrors(['email' => __($status)]);
+    }
+
+    private static function domainSuffix(): string
+    {
+        // Prefer explicit env var; fall back to the host in APP_URL so production
+        // works correctly even if TENANT_DOMAIN_SUFFIX is not set.
+        return env('TENANT_DOMAIN_SUFFIX')
+            ?: parse_url(config('app.url'), PHP_URL_HOST)
+            ?: 'localhost';
     }
 
     public function destroy(Client $client)

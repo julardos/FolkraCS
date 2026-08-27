@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Client extends Model
 {
     protected $fillable = [
-        'channels', 'name', 'business_type', 'status',
+        'tenant_id', 'slug', 'channels', 'name', 'business_type', 'status',
         'wa_base_url', 'wa_api_key', 'wa_session',
         'openrouter_api_key', 'openrouter_model', 'ai_instruction',
         'instagram_account_id', 'instagram_username',
