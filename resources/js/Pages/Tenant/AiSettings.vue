@@ -36,29 +36,10 @@ function save() {
     </div>
 
     <div class="max-w-3xl space-y-6">
-      <!-- Model & Key -->
-      <Card>
-        <CardHeader>
-          <CardTitle class="flex items-center gap-2"><Bot class="w-4 h-4" /> OpenRouter Config</CardTitle>
-          <CardDescription>Select the AI model and set your API key.</CardDescription>
-        </CardHeader>
-        <CardContent class="space-y-4">
-          <div class="space-y-1.5">
-            <Label>Model</Label>
-            <ModelPicker v-model="form.openrouter_model" :models="models" />
-          </div>
-          <div class="space-y-1.5">
-            <Label class="flex items-center gap-2">
-              <Key class="w-3 h-3" /> API Key
-              <span class="text-muted-foreground font-normal">(leave blank to keep current: {{ client.masked_ai_key }})</span>
-            </Label>
-            <Input v-model="form.openrouter_api_key" type="password" placeholder="sk-or-..." />
-            <p v-if="form.errors.openrouter_api_key" class="text-xs text-destructive">{{ form.errors.openrouter_api_key }}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <!-- OpenRouter Config — hidden for now, kept for future use -->
+      <!-- <Card>...</Card> -->
 
-      <Separator />
+
 
       <!-- AI Instruction -->
       <Card>

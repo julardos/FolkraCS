@@ -59,7 +59,7 @@ onUnmounted(() => document.removeEventListener('mousedown', onOutside));
     <!-- Dropdown -->
     <div
       v-if="open"
-      class="absolute z-30 mt-1 w-full rounded-md border bg-popover shadow-lg"
+      class="absolute z-30 mt-1 w-full rounded-md border bg-white shadow-lg"
     >
       <!-- Search input -->
       <div class="flex items-center gap-2 border-b px-3 py-2">
