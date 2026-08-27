@@ -15,6 +15,7 @@ import Label from '@/components/ui/label/Label.vue';
 import Badge from '@/components/ui/badge/Badge.vue';
 import Textarea from '@/components/ui/textarea/Textarea.vue';
 import Separator from '@/components/ui/separator/Separator.vue';
+import ModelPicker from '@/components/ui/ModelPicker.vue';
 
 const props = defineProps({ clients: Array, landlordDomain: String, models: Array });
 
@@ -93,7 +94,12 @@ function submit() {
 
 // ── Edit ─────────────────────────────────────────────────────
 const editingId = ref(null);
-const editForm = useForm({});
+const editForm = useForm({
+  channels: 'whatsapp', name: '', business_type: '', status: 'active',
+  wa_base_url: '', wa_api_key: '', wa_session: '',
+  openrouter_api_key: '', openrouter_model: 'openai/gpt-4o-mini',
+  ai_instruction: '',
+});
 
 function startEdit(client) {
   editingId.value = client.id;
@@ -248,12 +254,7 @@ const expandedInstruction = ref(null);
             </div>
             <div class="space-y-1.5">
               <Label>Model</Label>
-              <select
-                v-model="form.openrouter_model"
-                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <option v-for="m in models" :key="m.id" :value="m.id">{{ m.name }} ({{ m.id }})</option>
-              </select>
+              <ModelPicker v-model="form.openrouter_model" :models="models" />
             </div>
           </div>
           <div class="space-y-1.5">
@@ -463,9 +464,7 @@ const expandedInstruction = ref(null);
               </div>
               <div class="space-y-1.5">
                 <Label>Model</Label>
-                <select v-model="editForm.openrouter_model" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <option v-for="m in models" :key="m.id" :value="m.id">{{ m.name }} ({{ m.id }})</option>
-                </select>
+                <ModelPicker v-model="editForm.openrouter_model" :models="models" />
               </div>
             </div>
             <div class="space-y-1.5">
