@@ -78,9 +78,10 @@ class ConnectionsController extends Controller
 
         $res = (new \Modules\WhatsApp\Services\WahaClient($client))->getQrCode();
 
-        return isset($res['error'])
-            ? response()->json($res, 422)
-            : response()->json($res, 200);
+        // Always 200 — WAHA returns 422 when QR isn't ready yet (session still
+        // starting). The frontend already shows a "QR not available" fallback
+        // when data is null, so forwarding 422 just breaks the UI unnecessarily.
+        return response()->json($res, 200);
     }
 
     public function waStart()
