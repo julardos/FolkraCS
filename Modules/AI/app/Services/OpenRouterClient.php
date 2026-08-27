@@ -29,6 +29,24 @@ class OpenRouterClient
             ?? env('LKHM_OR_MODEL', 'openai/gpt-4o-mini');
     }
 
+    public function getModels(): array
+    {
+        $response = Http::withToken($this->apiKey)
+            ->withHeaders(['HTTP-Referer' => config('app.url'), 'X-Title' => 'FolkraCS'])
+            ->timeout(10)
+            ->get("{$this->baseUrl}/models");
+
+        if (! $response->successful()) {
+            return [];
+        }
+
+        return collect($response->json('data', []))
+            ->map(fn($m) => ['id' => $m['id'], 'name' => $m['name'] ?? $m['id']])
+            ->sortBy('name')
+            ->values()
+            ->all();
+    }
+
     public function chat(string $systemPrompt, array $messages): string
     {
         $payload = [

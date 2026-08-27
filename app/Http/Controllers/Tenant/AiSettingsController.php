@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Tenant;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
+use Modules\AI\Services\OpenRouterClient;
 
 class AiSettingsController extends Controller
 {
@@ -13,18 +15,18 @@ class AiSettingsController extends Controller
     {
         $client = Client::where('tenant_id', tenant('id'))->firstOrCreate(['tenant_id' => tenant('id')], ['name' => tenant('id'), 'slug' => tenant('id'), 'status' => 'active', 'openrouter_model' => 'openai/gpt-4o-mini']);
 
+        $models = Cache::remember('openrouter_models', 3600, function () use ($client) {
+            return (new OpenRouterClient($client))->getModels();
+        });
+
         return Inertia::render('Tenant/AiSettings', [
             'client' => [
-                'id'                 => $client->id,
-                'openrouter_model'   => $client->openrouter_model,
-                'ai_instruction'     => $client->ai_instruction,
-                'masked_ai_key'      => $client->masked_ai_key,
+                'id'               => $client->id,
+                'openrouter_model' => $client->openrouter_model,
+                'ai_instruction'   => $client->ai_instruction,
+                'masked_ai_key'    => $client->masked_ai_key,
             ],
-            'models' => [
-                'openai/gpt-4o-mini', 'openai/gpt-4o',
-                'anthropic/claude-3-haiku', 'anthropic/claude-sonnet-4-5',
-                'google/gemini-flash-1.5', 'meta-llama/llama-3.1-8b-instruct',
-            ],
+            'models' => $models,
         ]);
     }
 

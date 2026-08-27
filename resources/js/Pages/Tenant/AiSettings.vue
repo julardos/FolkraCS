@@ -1,6 +1,7 @@
 <script setup>
 import TenantLayout from '@/Layouts/TenantLayout.vue';
 import { useForm } from '@inertiajs/vue3';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import Card from '@/components/ui/card/Card.vue';
 import CardContent from '@/components/ui/card/CardContent.vue';
 import CardHeader from '@/components/ui/card/CardHeader.vue';
@@ -12,7 +13,7 @@ import Input from '@/components/ui/input/Input.vue';
 import Label from '@/components/ui/label/Label.vue';
 import Textarea from '@/components/ui/textarea/Textarea.vue';
 import Separator from '@/components/ui/separator/Separator.vue';
-import { Key, Bot } from 'lucide-vue-next';
+import { Key, Bot, ChevronDown, Search } from 'lucide-vue-next';
 
 const props = defineProps({ client: Object, models: Array });
 
@@ -21,6 +22,39 @@ const form = useForm({
   openrouter_api_key: '',
   ai_instruction:     props.client.ai_instruction ?? '',
 });
+
+// Searchable model picker
+const dropdownOpen = ref(false);
+const modelSearch  = ref('');
+const dropdownEl   = ref(null);
+
+const filteredModels = computed(() => {
+  const q = modelSearch.value.trim().toLowerCase();
+  if (!q) return props.models;
+  return props.models.filter(m =>
+    m.id.toLowerCase().includes(q) || m.name.toLowerCase().includes(q)
+  );
+});
+
+const selectedModelName = computed(() =>
+  props.models.find(m => m.id === form.openrouter_model)?.name ?? form.openrouter_model
+);
+
+function selectModel(model) {
+  form.openrouter_model = model.id;
+  dropdownOpen.value    = false;
+  modelSearch.value     = '';
+}
+
+function onClickOutside(e) {
+  if (dropdownEl.value && !dropdownEl.value.contains(e.target)) {
+    dropdownOpen.value = false;
+    modelSearch.value  = '';
+  }
+}
+
+onMounted(() => document.addEventListener('mousedown', onClickOutside));
+onUnmounted(() => document.removeEventListener('mousedown', onClickOutside));
 
 function save() {
   form.put('/ai-settings');
@@ -44,12 +78,51 @@ function save() {
         <CardContent class="space-y-4">
           <div class="space-y-1.5">
             <Label>Model</Label>
-            <select
-              v-model="form.openrouter_model"
-              class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option v-for="m in models" :key="m" :value="m">{{ m }}</option>
-            </select>
+            <div class="relative" ref="dropdownEl">
+              <!-- Trigger -->
+              <button
+                type="button"
+                @click="dropdownOpen = !dropdownOpen"
+                class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent transition-colors"
+              >
+                <span class="truncate">{{ selectedModelName }}</span>
+                <ChevronDown class="w-4 h-4 text-muted-foreground shrink-0 ml-2" :class="dropdownOpen ? 'rotate-180' : ''" />
+              </button>
+
+              <!-- Dropdown -->
+              <div
+                v-if="dropdownOpen"
+                class="absolute z-20 mt-1 w-full rounded-md border bg-popover shadow-lg"
+              >
+                <!-- Search -->
+                <div class="flex items-center gap-2 border-b px-3 py-2">
+                  <Search class="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  <input
+                    v-model="modelSearch"
+                    autofocus
+                    placeholder="Cari model…"
+                    class="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  />
+                </div>
+                <!-- Results -->
+                <div class="max-h-64 overflow-y-auto py-1">
+                  <p v-if="!filteredModels.length" class="px-3 py-4 text-xs text-center text-muted-foreground">
+                    Tidak ada model yang ditemukan.
+                  </p>
+                  <button
+                    v-for="m in filteredModels"
+                    :key="m.id"
+                    type="button"
+                    @click="selectModel(m)"
+                    class="flex w-full flex-col px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                    :class="m.id === form.openrouter_model ? 'bg-primary/5 font-medium' : ''"
+                  >
+                    <span>{{ m.name }}</span>
+                    <span class="text-xs text-muted-foreground">{{ m.id }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="space-y-1.5">
             <Label class="flex items-center gap-2">
