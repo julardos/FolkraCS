@@ -13,7 +13,16 @@ class ConnectionsController extends Controller
 {
     private function client(): Client
     {
-        return Client::where('tenant_id', tenant('id'))->firstOrFail();
+        return Client::where('tenant_id', tenant('id'))
+            ->firstOrCreate(
+                ['tenant_id' => tenant('id')],
+                ['name' => tenant('id'), 'slug' => tenant('id'), 'status' => 'active']
+            );
+    }
+
+    private function waConfigured(Client $client): bool
+    {
+        return !empty($client->wa_base_url) && !empty($client->wa_session);
     }
 
     // ── Page ──────────────────────────────────────────────────────────────
@@ -43,13 +52,17 @@ class ConnectionsController extends Controller
     {
         $client = $this->client();
 
-        $waha = new \Modules\WhatsApp\Services\WahaClient($client);
+        if (!$this->waConfigured($client)) {
+            return response()->json(['status' => 'NOT_CONFIGURED'], 200);
+        }
+
+        $waha   = new \Modules\WhatsApp\Services\WahaClient($client);
         $status = $waha->getSessionStatus();
 
         $httpCode = match ($status['status']) {
-            'ERROR' => $status['http_code'] ?? 503,
+            'ERROR'      => $status['http_code'] ?? 503,
             'AUTH_ERROR' => 403,
-            default => 200,
+            default      => 200,
         };
 
         return response()->json($status, $httpCode);
@@ -57,22 +70,30 @@ class ConnectionsController extends Controller
 
     public function waQr()
     {
-        $waha = new \Modules\WhatsApp\Services\WahaClient($this->client());
-        $res = $waha->getQrCode();
+        $client = $this->client();
 
-        if (isset($res['error'])) {
-            return response()->json($res, 422);
+        if (!$this->waConfigured($client)) {
+            return response()->json(['status' => 'NOT_CONFIGURED'], 200);
         }
 
-        return response()->json($res, 200);
+        $res = (new \Modules\WhatsApp\Services\WahaClient($client))->getQrCode();
+
+        return isset($res['error'])
+            ? response()->json($res, 422)
+            : response()->json($res, 200);
     }
 
     public function waStart()
     {
-        $waha = new \Modules\WhatsApp\Services\WahaClient($this->client());
-        $res = $waha->startSession();
+        $client = $this->client();
 
-        $httpCode = isset($res['http_code']) ? $res['http_code'] : 200;
+        if (!$this->waConfigured($client)) {
+            return response()->json(['status' => 'NOT_CONFIGURED'], 200);
+        }
+
+        $res      = (new \Modules\WhatsApp\Services\WahaClient($client))->startSession();
+        $httpCode = $res['http_code'] ?? 200;
+
         return response()->json($res, $httpCode);
     }
 
