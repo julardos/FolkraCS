@@ -53,7 +53,7 @@ class KnowledgeBaseController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'file'  => 'required|file|mimes:pdf,docx,txt,md|max:10240',
+            'file'  => 'required|file|mimes:pdf,docx,txt,md,xlsx,xls,csv|max:20480',
         ]);
 
         $file    = $request->file('file');

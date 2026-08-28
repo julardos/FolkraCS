@@ -174,8 +174,8 @@ function cancelNew() {
               <p class="text-sm font-medium">
                 {{ uploadForm.file ? uploadForm.file.name : 'Drop a file here or click to browse' }}
               </p>
-              <p class="text-xs text-muted-foreground mt-1">PDF, DOCX, TXT — up to 10 MB</p>
-              <input ref="fileInput" type="file" class="hidden" accept=".pdf,.docx,.txt,.md" @change="onFileChange" />
+              <p class="text-xs text-muted-foreground mt-1">PDF, DOCX, XLSX, XLS, CSV, TXT — up to 20 MB</p>
+              <input ref="fileInput" type="file" class="hidden" accept=".pdf,.docx,.txt,.md,.xlsx,.xls,.csv" @change="onFileChange" />
             </div>
             <p v-if="uploadForm.errors.file" class="text-xs text-destructive">{{ uploadForm.errors.file }}</p>
           </div>

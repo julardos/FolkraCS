@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Smalot\PdfParser\Parser as PdfParser;
 
 class DocumentExtractor
@@ -10,10 +11,11 @@ class DocumentExtractor
     public function extract(UploadedFile $file): string
     {
         return match ($file->extension()) {
-            'pdf'       => $this->extractPdf($file),
-            'docx'      => $this->extractDocx($file),
-            'txt', 'md' => $file->get(),
-            default     => throw new \InvalidArgumentException("Unsupported file type: {$file->extension()}"),
+            'pdf'        => $this->extractPdf($file),
+            'docx'       => $this->extractDocx($file),
+            'xlsx', 'xls', 'csv' => $this->extractSpreadsheet($file),
+            'txt', 'md'  => $file->get(),
+            default      => throw new \InvalidArgumentException("Unsupported file type: {$file->extension()}"),
         };
     }
 
@@ -23,6 +25,34 @@ class DocumentExtractor
         $pdf    = $parser->parseFile($file->getRealPath());
 
         return $pdf->getText();
+    }
+
+    private function extractSpreadsheet(UploadedFile $file): string
+    {
+        $spreadsheet = IOFactory::load($file->getRealPath());
+        $lines       = [];
+
+        foreach ($spreadsheet->getAllSheets() as $sheet) {
+            $title = $sheet->getTitle();
+            if (count($spreadsheet->getAllSheets()) > 1) {
+                $lines[] = "## {$title}";
+            }
+
+            foreach ($sheet->getRowIterator() as $row) {
+                $cells = [];
+                foreach ($row->getCellIterator() as $cell) {
+                    $val = $cell->getFormattedValue();
+                    if ($val !== '' && $val !== null) {
+                        $cells[] = $val;
+                    }
+                }
+                if ($cells) {
+                    $lines[] = implode("\t", $cells);
+                }
+            }
+        }
+
+        return trim(implode("\n", $lines));
     }
 
     private function extractDocx(UploadedFile $file): string
